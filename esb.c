@@ -13,84 +13,84 @@
 
 #define SIZE 2024
 
-typedef struct Queue
-{
-        int capacity;
-        int size;
-        int front;
-        int rear;
-        char **elements;
-}Queue;
-Queue *Q;
-Queue * createQueue(int maxElements)
-{
-        /* Create a Queue */
-        Queue *Q;
-        Q = (Queue *)malloc(sizeof(Queue));
-        /* Initialise its properties */
-        Q->elements = (char**)malloc(sizeof(char*)*maxElements);
-        Q->size = 0;
-        Q->capacity = maxElements;
-        Q->front = 0;
-        Q->rear = -1;
-        /* Return the pointer */
-        return Q;
-}
+// typedef struct Queue
+// {
+//         int capacity;
+//         int size;
+//         int front;
+//         int rear;
+//         char **elements;
+// }Queue;
+// Queue *Q;
+// Queue * createQueue(int maxElements)
+// {
+//         /* Create a Queue */
+//         Queue *Q;
+//         Q = (Queue *)malloc(sizeof(Queue));
+//         /* Initialise its properties */
+//         Q->elements = (char**)malloc(sizeof(char*)*maxElements);
+//         Q->size = 0;
+//         Q->capacity = maxElements;
+//         Q->front = 0;
+//         Q->rear = -1;
+//         /* Return the pointer */
+//         return Q;
+// }
 
-void Dequeue(Queue *Q)
-{
-        if(Q->size!=0)
-        {
-                Q->size--;
-                Q->front++;
-                /* As we fill elements in circular fashion */
-                if(Q->front==Q->capacity)
-                {
-                        Q->front=0;
-                }
-        }
-        return;
-}
+// void Dequeue(Queue *Q)
+// {
+//         if(Q->size!=0)
+//         {
+//                 Q->size--;
+//                 Q->front++;
+//                 /* As we fill elements in circular fashion */
+//                 if(Q->front==Q->capacity)
+//                 {
+//                         Q->front=0;
+//                 }
+//         }
+//         return;
+// }
 
-char* front(Queue *Q)
-{
-        if(Q->size!=0)
-        {
-                /* Return the element which is at the front*/
-                return Q->elements[Q->front];
-        }
-        return NULL;
-}
+// char* front(Queue *Q)
+// {
+//         if(Q->size!=0)
+//         {
+//                 /* Return the element which is at the front*/
+//                 return Q->elements[Q->front];
+//         }
+//         return NULL;
+// }
 
 
-void Enqueue(Queue *Q , char *element)
-{
-        //char *p = (char *) malloc(strlen(element)+1);
+// void Enqueue(Queue *Q , char *element)
+// {
+//         //char *p = (char *) malloc(strlen(element)+1);
 
-        /* If the Queue is full, we cannot push an element into it as there is no space for it.*/
-        if(Q->size == Q->capacity)
-        {
-                printf("Queue is Full\n");
-        }
-        else
-        {
-                Q->size++;
-                Q->rear = Q->rear + 1;
-                /* As we fill the queue in circular fashion */
-                if(Q->rear == Q->capacity)
-                {
-                        Q->rear = 0;
-                }
-                /* Insert the element in its rear side */ 
+//         /* If the Queue is full, we cannot push an element into it as there is no space for it.*/
+//         if(Q->size == Q->capacity)
+//         {
+//                 printf("Queue is Full\n");
+//         }
+//         else
+//         {
+//                 Q->size++;
+//                 Q->rear = Q->rear + 1;
+//                 /* As we fill the queue in circular fashion */
+//                 if(Q->rear == Q->capacity)
+//                 {
+//                         Q->rear = 0;
+//                 }
+//                 /* Insert the element in its rear side */ 
 
-                //printf("testing\n");
+//                 //printf("testing\n");
 
-                Q->elements[Q->rear] = (char *) malloc((sizeof element + 1)* sizeof(char));
+//                 Q->elements[Q->rear] = (char *) malloc((sizeof element + 1)* sizeof(char));
 
-                strcpy(Q->elements[Q->rear], element);
-        }
-        return;
-}
+//                 strcpy(Q->elements[Q->rear], element);
+//         }
+//         return;
+// }
 
 xmlDocPtr load_xml_doc(char *xml_file_path) {
     xmlDocPtr doc = xmlParseFile(xml_file_path);
@@ -148,37 +148,29 @@ xmlChar* get_element_text(char *node_xpath, xmlDocPtr doc) {
     }
     return node_text;
 }
-void finish_with_error(MYSQL *con)
-{
-  fprintf(stderr, "%s\n", mysql_error(con));
-  mysql_close(con);
-  exit(1);
-}
 
 void *write_file(void *new_sock)
 {
+    printf("[+]Creating and storing BMD File in local.\n");
     int sockfd;
     sockfd=(intptr_t)new_sock;
     int n; 
     FILE *fp;
+
     char *filename = "received_bmd.xml";
     char buffer[SIZE];
 
     fp = fopen(filename, "w");
-    if(fp==NULL)
+    if(fp!=NULL)
     {
-        perror("[-]Error in creating file.");
-        exit(1);
-    }
-    bzero(buffer, SIZE);
+        printf("hi\n");
+        bzero(buffer, SIZE);
   
-        printf("[+]Reading and Creating File.\n");
+        printf("[+]Reading File.\n");
         n = read(sockfd, buffer, SIZE);
-        if(n<=0)
+        if(n>0)
         {
-            perror("error reading");
-        }
-        int start=0,end=strlen(buffer);
+            int start=0,end=strlen(buffer);
         for(int i=0;buffer[i]!='\0';i++)
         {
             if(buffer[i]=='<')
@@ -197,62 +189,90 @@ void *write_file(void *new_sock)
         fprintf(fp, "%s", xmlcontent);
         printf("[+]File Created Successfully.\n");
         bzero(buffer, SIZE);
-        if(fclose(fp)!=0){
+        if(fclose(fp)==0){
+            printf("[+]Parsing File %s\n",filename);
+            char docname[] = "/home/yogesh/Downloads/c_programs/";
+            strcat(docname,filename);
+            printf("%s\n",docname);
+            xmlDocPtr doc = load_xml_doc(docname);
+            char *message_id=get_element_text("//MessageID", doc);
+            char *sender=get_element_text("//Sender", doc);
+            char *destination=get_element_text("//Destination", doc);
+            if(message_id!=""&& sender!=""&& destination!="")
+            {
+                printf("MessageID=%s\n", message_id);
+                printf("Sender=%s\n", sender);
+                printf("Destination=%s\n", destination);
+                printf("MessageType=%s\n", get_element_text("//MessageType", doc));
+                printf("CreationDateTime=%s\n", get_element_text("//CreationDateTime", doc));
+                printf("Signature=%s\n", get_element_text("//Signature", doc));
+                printf("ReferenceID=%s\n", get_element_text("//ReferenceID", doc));
+                printf("key1=%s\n", get_element_text("//key1", doc));
+                printf("Payload=%s\n", get_element_text("//Payload", doc));
+
+                    //connecting to database esb_db
+                    MYSQL *con = mysql_init(NULL);
+
+                if (con != NULL)
+                {
+                    // MYSQL *mysql_real_connect(MYSQL *mysql, const char *host, const char *user, const char *passwd, const char *db, unsigned int port, const char *unix_socket, unsigned long client_flag);
+                if (mysql_real_connect(con, "localhost", "user", "1234",
+                        "esb_db", 0, NULL, 0) != NULL)
+                {
+                    printf("[+]Storing To Table esb_request.\n");
+                    char *status="available";
+                    char sql_statement[2048];
+                    sprintf(sql_statement,"INSERT INTO esb_request(sender_id , dest_id, message_type,reference_id ,message_id ,received_on ,data_location , status,status_details ,processing_attempts) VALUES('%s','%s','%s','%s','%s','%s','%s','%s','empty',0)",sender,destination,get_element_text("//MessageType", doc),get_element_text("//ReferenceID", doc),message_id,get_element_text("//CreationDateTime", doc),docname,status);
+                if (mysql_query(con,sql_statement)==0) {
+                    printf("[+]Stored Successfully.\n");
+                    printf("[+]Inserting into Queue.\n");
+                    // Enqueue(Q,message_id);
+                    // printf("Front element is %s\n",front(Q));
+                    printf("[+]MessageID inserted into queue.\n");
+                    
+                }
+                else{
+                    fprintf(stderr, "%s\n", mysql_error(con));
+                    mysql_close(con);
+                }
+                    xmlFreeDoc(doc);
+                    xmlCleanupParser();
+                mysql_close(con);
+
+                
+                }else{
+                    fprintf(stderr, "%s\n", mysql_error(con));
+                    mysql_close(con);
+                }
+                
+                }
+                else{
+                    fprintf(stderr, "%s\n", mysql_error(con));
+                    
+                }
+                
+            }
+            else{
+                perror("[-]Empty bmd parameters.");
+            }
+            
+        }
+        else{
             printf("[-]File not closed.");
-            exit(-1);
         }
 
-        printf("[+]Parsing File %s\n",filename);
-          char docname[] = "/home/yogesh/Downloads/c_programs/";
-          strcat(docname,filename);
-          printf("%s\n",docname);
-    xmlDocPtr doc = load_xml_doc(docname);
-    printf("MessageID=%s\n", get_element_text("//MessageID", doc));
-    printf("Sender=%s\n", get_element_text("//Sender", doc));
-    printf("Destination=%s\n", get_element_text("//Destination", doc));
-    printf("MessageType=%s\n", get_element_text("//MessageType", doc));
-    printf("CreationDateTime=%s\n", get_element_text("//CreationDateTime", doc));
-    printf("Signature=%s\n", get_element_text("//Signature", doc));
-    printf("ReferenceID=%s\n", get_element_text("//ReferenceID", doc));
-    printf("key1=%s\n", get_element_text("//key1", doc));
-    printf("Payload=%s\n", get_element_text("//Payload", doc));
-
-    MYSQL *con = mysql_init(NULL);
-
-  if (con == NULL)
-  {
-      fprintf(stderr, "%s\n", mysql_error(con));
-      exit(1);
-  }
-// MYSQL *mysql_real_connect(MYSQL *mysql, const char *host, const char *user, const char *passwd, const char *db, unsigned int port, const char *unix_socket, unsigned long client_flag);
-  if (mysql_real_connect(con, "localhost", "user", "1234",
-          "esb_db", 0, NULL, 0) == NULL)
-  {
-      finish_with_error(con);
-  }
-  printf("[+]Storing To Table esb_request.\n");
-
-  char message_id[45];
-  strcpy(message_id,get_element_text("//MessageID", doc));
-  printf("%s\n",message_id);
-  char status[]="available";
-    char sql_statement[2048];
-    sprintf(sql_statement,"INSERT INTO esb_request(sender_id , dest_id, message_type,reference_id ,message_id ,received_on ,data_location , status,status_details ,processing_attempts) VALUES('%s','%s','%s','%s','%s','%s','%s','%s','empty',0)",get_element_text("//Sender", doc),get_element_text("//Destination", doc),get_element_text("//MessageType", doc),get_element_text("//ReferenceID", doc),get_element_text("//MessageID", doc),get_element_text("//CreationDateTime", doc),docname,status);
-   if (mysql_query(con,sql_statement)) {
-      finish_with_error(con);
-  }
-    xmlFreeDoc(doc);
-    xmlCleanupParser();
-  mysql_close(con);
-
-  printf("[+]Stored Successfully.\n");
-  printf("[+]Inserting into Queue.\n");
-  Enqueue(Q,message_id);
-  printf("Front element is %s\n",front(Q));
-  printf("[+]MessageID inserted into queue.\n");
-  printf("[+]Closing Connection.\n");
-  close(sockfd);
-  pthread_exit(NULL);
+        
+        }
+        else{
+            perror("[-]Error reading from socket.");
+        }
+    }
+    else{
+        perror("[-]Error in creating file.");
+    }
+    printf("[+]Closing Connection.\n");
+    close(sockfd);
+    pthread_exit(NULL);
 }
 bool client_handler_thread(int sock_fd) {
     printf("[+]Creating a client handler thread.\n");
@@ -320,12 +340,13 @@ void start_server_socket(){
     //         printf("[-]Failed to create client thread.\n");
     //         return;
     //     }
-
+    int connection_number=1;
          while (1) {
         struct sockaddr_in caddr; /* client address */
         int len = sizeof(caddr);  /* address length could change */
 
-        printf("[+]Waiting for incoming connections...\n");
+        printf("[+]Waiting for incoming connection %d.\n",connection_number);
+        connection_number++;
         int client_fd = accept(sockfd, (struct sockaddr *) &caddr, &len);  /* accept blocks */
 
         if (client_fd < 0) {
@@ -346,6 +367,6 @@ void start_server_socket(){
 
 int main ()
 {
-    Q=createQueue(5);
+    // Q=createQueue(5);
     start_server_socket();
 }

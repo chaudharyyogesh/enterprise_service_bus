@@ -31,25 +31,30 @@ int main(int argc, char **argv)
   }
 
   MYSQL_RES *result = mysql_store_result(con);
+  printf("helo\n");
 
   if (result == NULL)
   {
+      printf("empty");
       finish_with_error(con);
   }
 
   int num_fields = mysql_num_fields(result);
+  printf("numfields:%d\n",num_fields);
 
   MYSQL_ROW row;
 
   while ((row = mysql_fetch_row(result)))
   {
+      printf("hi");
       for(int i = 0; i < num_fields; i++)
       {
           printf("%s ", row[i] ? row[i] : "NULL");
       }
-
+    // printf("hi%s\n",row[0]);
       printf("\n");
   }
+  printf("bye");
 
   mysql_free_result(result);
   mysql_close(con);

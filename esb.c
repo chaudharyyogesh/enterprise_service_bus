@@ -397,7 +397,7 @@ int send_email(char *receiver_email)
     recipients = curl_slist_append(recipients, receiver_email);
 
     fd=fopen("mail.txt","w");
-    fprintf(fd,"From: \"Sender Name\" <motoeverest8849@gmail.com>\nTo: \"Recipient Name\" <%s>\nSubject: This is your subject\n\nThis is your mail. Hi mail.\n",receiver_email);
+    fprintf(fd,"From: \"Sender Name\" <sender@gmail.com>\nTo: \"Recipient Name\" <%s>\nSubject: This is your subject\n\nThis is your mail. Hi mail.\n",receiver_email);
     fclose(fd);
     fd = fopen("mail.txt", "rb");
     if (!fd) {return 1;} 
@@ -407,14 +407,14 @@ int send_email(char *receiver_email)
     curl_easy_setopt(hnd, CURLOPT_URL, "smtps://smtp.gmail.com:465/mail.txt");
     curl_easy_setopt(hnd, CURLOPT_UPLOAD, 1L);
     curl_easy_setopt(hnd, CURLOPT_READDATA, fd); 
-    curl_easy_setopt(hnd, CURLOPT_USERPWD, "motoeverest8849@gmail.com:9818743347");
+    curl_easy_setopt(hnd, CURLOPT_USERPWD, "sender@gmail.com:passwd");
     curl_easy_setopt(hnd, CURLOPT_USERAGENT, "curl/7.47.0");
     curl_easy_setopt(hnd, CURLOPT_MAXREDIRS, 50L);
     curl_easy_setopt(hnd, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(hnd, CURLOPT_SSL_VERIFYHOST, 0L);
     curl_easy_setopt(hnd, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
     curl_easy_setopt(hnd, CURLOPT_TCP_KEEPALIVE, 1L);
-    curl_easy_setopt(hnd, CURLOPT_MAIL_FROM, "motoeverest8849@gmail.com");
+    curl_easy_setopt(hnd, CURLOPT_MAIL_FROM, "sender@gmail.com");
     curl_easy_setopt(hnd, CURLOPT_MAIL_RCPT, recipients);
     curl_easy_setopt(hnd, CURLOPT_VERBOSE, 1L);
 

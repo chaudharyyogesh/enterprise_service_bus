@@ -1,4 +1,6 @@
-//compile: gcc -pthread -lxml2 -o esb.o esb.c `xml2-config --cflags --libs` `mysql_config --cflags --libs`
+//compile: gcc -pthread -lxml2 -o esb.o esb.c bmd.c `xml2-config --cflags --libs` `mysql_config --cflags --libs` -lcurl
+// send client request: curl -X POST -d @/home/yogesh/Downloads/c_programs/received_bmd.xml http://localhost:8000
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,159 +13,58 @@
 #include <libxml/xpath.h>
 #include <mysql/mysql.h>
 #include <curl/curl.h>
+#include "bmd.h"
 
 #define SIZE 2024
 
-// typedef struct {
-//     char* sender_id;
-//     char* destination_id;
-//     char* message_type;
-//     char* reference_id;
-//     char* message_id;
-//     char* signature;
-//     char* creation_time;    
-// } bmd_envelop;
-
-// typedef struct {
-//     bmd_envelop envelop;
-//     char* payload;
-//     int success;
-// } bmd;
-
-// typedef struct Queue
-// {
-//         int capacity;
-//         int size;
-//         int front;
-//         int rear;
-//         char **elements;
-// }Queue;
-// Queue *Q;
-// Queue * createQueue(int maxElements)
-// {
-//         /* Create a Queue */
-//         Queue *Q;
-//         Q = (Queue *)malloc(sizeof(Queue));
-//         /* Initialise its properties */
-//         Q->elements = (char**)malloc(sizeof(char*)*maxElements);
-//         Q->size = 0;
-//         Q->capacity = maxElements;
-//         Q->front = 0;
-//         Q->rear = -1;
-//         /* Return the pointer */
-//         return Q;
-// }
-
-// void Dequeue(Queue *Q)
-// {
-//         if(Q->size!=0)
-//         {
-//                 Q->size--;
-//                 Q->front++;
-//                 /* As we fill elements in circular fashion */
-//                 if(Q->front==Q->capacity)
-//                 {
-//                         Q->front=0;
-//                 }
-//         }
-//         return;
-// }
-
-// char* front(Queue *Q)
-// {
-//         if(Q->size!=0)
-//         {
-//                 /* Return the element which is at the front*/
-//                 return Q->elements[Q->front];
-//         }
-//         return NULL;
-// }
-
-
-// void Enqueue(Queue *Q , char *element)
-// {
-//         //char *p = (char *) malloc(strlen(element)+1);
-
-//         /* If the Queue is full, we cannot push an element into it as there is no space for it.*/
-//         if(Q->size == Q->capacity)
-//         {
-//                 printf("Queue is Full\n");
-//         }
-//         else
-//         {
-//                 Q->size++;
-//                 Q->rear = Q->rear + 1;
-//                 /* As we fill the queue in circular fashion */
-//                 if(Q->rear == Q->capacity)
-//                 {
-//                         Q->rear = 0;
-//                 }
-//                 /* Insert the element in its rear side */ 
-
-//                 //printf("testing\n");
-
-//                 Q->elements[Q->rear] = (char *) malloc((sizeof element + 1)* sizeof(char));
-
-//                 strcpy(Q->elements[Q->rear], element);
-//         }
-//         return;
-// }
-
-xmlDocPtr load_xml_doc(char *xml_file_path) {
-    xmlDocPtr doc = xmlParseFile(xml_file_path);
-    if (doc == NULL) {
-        fprintf(stderr, "ERROR: Document not parsed successfully. \n");
-        return NULL;
+ int  is_bmd_valid(BMD *bmd) //bmd validation function
+{
+    
+    int valid = 1; // 1 => vaild, 0 => invalid
+  
+   
+      if(bmd->envelop.message_id==0)
+    {
+        printf("[-]MessageId is mandatory (missing in BMD file)\n");
+        valid = 0;
     }
-    return doc;
-}
+     if(bmd->envelop.message_type==0)
+    {
+        printf("[-]MessageType is mandatory (missing in BMD file)\n");
+        valid = 0;
 
-/**
- * Extract the nodes matching the given xpath from the supplied
- * XML document object.
- */
-xmlXPathObjectPtr get_nodes_at_xpath(xmlDocPtr doc, xmlChar *xpath) {
+    } 
+    if(bmd->envelop.sender_id==0)
+    {
+        printf("[-]Sender Id is mandatory (missing in BMD file)\n");
+        valid = 0;
 
-    xmlXPathContextPtr context = xmlXPathNewContext(doc);
-    if (context == NULL) {
-        printf("ERROR: Failed to create xpath context from the XML document.\n");
-        return NULL;
-    }
-    xmlXPathObjectPtr result = xmlXPathEvalExpression(xpath, context);
-    xmlXPathFreeContext(context);
-    if (result == NULL) {
-        printf("ERROR: Failed to evaluate xpath expression.\n");
-        return NULL;
-    }
-    if (xmlXPathNodeSetIsEmpty(result->nodesetval)) {
-        xmlXPathFreeObject(result);
-        printf("No matching nodes found at the xpath.\n");
-        return NULL;
-    }
-    return result;
-}
+    } 
+    if(bmd->envelop.destination_id== 0)
+    {      
+        printf("[-]Destination Id is mandatory (missing in BMD file)\n");
+        valid = 0;
 
-/**
- * Returns the text value of an XML element. It is expected that
- * there is only one XML element at the given xpath in the XML.
- */
-xmlChar* get_element_text(char *node_xpath, xmlDocPtr doc) {
-    xmlChar *node_text;
-    xmlXPathObjectPtr result = get_nodes_at_xpath(doc, 
-        (xmlChar*)node_xpath);
-    if (result) {
-        xmlNodeSetPtr nodeset = result->nodesetval;
-        if (nodeset->nodeNr == 1) {
-            node_text = xmlNodeListGetString(doc,
-                nodeset->nodeTab[0]->xmlChildrenNode, 1);
-        } else {
-            printf("ERROR: Expected one %s node, found %d\n", node_xpath, nodeset->nodeNr);
-        }
-        xmlXPathFreeObject(result);
-    } else {
-        printf("ERROR: Node not found at xpath %s\n", node_xpath);
+    } 
+    if(bmd->envelop.creation_time== 0)
+    {
+        printf("[-]CreationDateTime is mandatory (missing in BMD file)\n");
+        valid = 0;
+
+    } 
+    if(bmd->envelop.signature== 0)
+    {
+        printf("[-]Signature is mandatory (missing in BMD file)\n");
+        valid = 0;
+
+    } 
+    if(bmd->envelop.reference_id== 0)
+    {
+        printf("[-]ReferenceID is mandatory (missing in BMD file)\n");
+        valid = 0;
     }
-    return node_text;
+    printf("valid:%d\n",valid);
+    return valid;
 }
 
 void *write_file(void *new_sock)
@@ -174,125 +75,104 @@ void *write_file(void *new_sock)
     int n; 
     FILE *fp;
 
-    char *filename = "received_bmd.xml";
+    char *filename = "received_bmd.xml"; //file to store received bmd file locally
     char buffer[SIZE];
 
     fp = fopen(filename, "w");
     if(fp!=NULL)
     {
-        printf("hi\n");
         bzero(buffer, SIZE);
   
         printf("[+]Reading BMD file into buffer.\n");
-        n = read(sockfd, buffer, SIZE);
+        n = read(sockfd, buffer, SIZE); //reads data into buffer
         if(n>0)
         {
+            //extracting the bmd from buffer
             int start=0,end=strlen(buffer);
-        for(int i=0;buffer[i]!='\0';i++)
-        {
-            if(buffer[i]=='<')
+            for(int i=0;buffer[i]!='\0';i++)
             {
-                start=i+1;
-                break;
+                if(buffer[i]=='<')
+                {
+                    start=i+1;
+                    break;
+                }
             }
-        }
-        char xmlcontent[2000];
-        int length=end-start+1,c=0;
-         while (c < length) {
-        xmlcontent[c] = buffer[start+c-1];
-        c++;
-        }
-        xmlcontent[c] = '\0';
-        fprintf(fp, "%s", xmlcontent);
-        printf("[+]BMD file stored Successfully.\n");
-        bzero(buffer, SIZE);
-        if(fclose(fp)==0){
-            printf("[+]Parsing BMD File %s\n",filename);
-            char docname[] = "/home/yogesh/Downloads/c_programs/";
-            strcat(docname,filename);
-            printf("%s\n",docname);
-            xmlDocPtr doc = load_xml_doc(docname);
-    //      bmd* parsed_data= malloc (sizeof (bmd));
-        // parsed_data->envelop.sender_id = get_element_text("//Sender", doc);
-        // parsed_data->envelop.destination_id = get_element_text("//Destination", doc);
-        // parsed_data->envelop.message_type = get_element_text("//MessageType", doc);
-        // parsed_data->envelop.reference_id = get_element_text("//ReferenceID", doc);
-        // parsed_data->envelop.message_id = get_element_text("//MessageID", doc);
-        // parsed_data->payload = get_element_text("//Payload", doc);
-            char *message_id=get_element_text("//MessageID", doc);
-            char *sender=get_element_text("//Sender", doc);
-            char *destination=get_element_text("//Destination", doc);
-            if(message_id!=""&& sender!=""&& destination!="")
-            {
-                printf("MessageID=%s\n", message_id);
-                printf("Sender=%s\n", sender);
-                printf("Destination=%s\n", destination);
-                printf("MessageType=%s\n", get_element_text("//MessageType", doc));
-                printf("CreationDateTime=%s\n", get_element_text("//CreationDateTime", doc));
-                printf("Signature=%s\n", get_element_text("//Signature", doc));
-                printf("ReferenceID=%s\n", get_element_text("//ReferenceID", doc));
-                printf("key1=%s\n", get_element_text("//key1", doc));
-                printf("Payload=%s\n", get_element_text("//Payload", doc));
+            char xmlcontent[2000];
+            int length=end-start+1,c=0;
+            while (c < length) {
+            xmlcontent[c] = buffer[start+c-1];
+            c++;
+            }
+            xmlcontent[c] = '\0';
+            //storing extracted bmd into file
+            fprintf(fp, "%s", xmlcontent);
+            printf("[+]BMD file stored Successfully.\n");
+            bzero(buffer, SIZE);
+            if(fclose(fp)==0){
+                printf("[+]Parsing BMD File %s\n",filename);
+                char bmdfilepath[] = "/home/yogesh/Downloads/nho2021/Goat/"; //local path of the bmd file received_bmd.xml
+                strcat(bmdfilepath,filename);
+                
+                // parsing the bmd file passing bmdfilepath as parameter i.e. /home/yogesh/Downloads/nho2021/Goat/received_bmd.xml
+                BMD *bmd=parse_bmd_file(bmdfilepath);
+                // printf("Payload::%s\n",bmd->payload);
+                
+                if(is_bmd_valid(bmd))   //checks for values for parsed bmd is not empty
+                {
+                    printf("MessageID=%s\n", bmd->envelop.message_id);
+                    printf("Sender=%s\n", bmd->envelop.sender_id);
+                    printf("Destination=%s\n", bmd->envelop.destination_id);
+                    printf("MessageType=%s\n",bmd->envelop.message_type);
+                    printf("CreationDateTime=%s\n",bmd->envelop.creation_time);
+                    printf("Signature=%s\n", bmd->envelop.signature);
+                    printf("ReferenceID=%s\n", bmd->envelop.reference_id);
+                    printf("Payload=%s\n", bmd->payload);
 
                     //connecting to database esb_db
                     MYSQL *con = mysql_init(NULL);
 
-                if (con != NULL)
-                {
-                    // MYSQL *mysql_real_connect(MYSQL *mysql, const char *host, const char *user, const char *passwd, const char *db, unsigned int port, const char *unix_socket, unsigned long client_flag);
-                if (mysql_real_connect(con, "localhost", "user", "1234",
-                        "esb_db", 0, NULL, 0) != NULL)
-                {
-                    printf("[+]Storing parsed values to table esb_request.\n");
-                    char *status="available";
-                    char sql_statement[2048];
-                    sprintf(sql_statement,"INSERT INTO esb_request(sender_id , dest_id, message_type,reference_id ,message_id ,received_on ,data_location , status,status_details ,processing_attempts) VALUES('%s','%s','%s','%s','%s','%s','%s','%s','empty',0)",sender,destination,get_element_text("//MessageType", doc),get_element_text("//ReferenceID", doc),message_id,get_element_text("//CreationDateTime", doc),docname,status);
-                if (mysql_query(con,sql_statement)==0) {
-                    printf("[+]Stored Successfully in table esb_request.\n");
-                    // printf("[+]Inserting into Queue.\n");
-                    // // Enqueue(Q,message_id);
-                    // // printf("Front element is %s\n",front(Q));
-                    // printf("[+]MessageID inserted into queue.\n");
-                    
-                }
-                else{
-                    fprintf(stderr, "%s\n", mysql_error(con));
-                    mysql_close(con);
-                }
-                    xmlFreeDoc(doc);
-                    xmlCleanupParser();
-                mysql_close(con);
+                    if (con != NULL)
+                    {
+                        // MYSQL *mysql_real_connect(MYSQL *mysql, const char *host, const char *user, const char *passwd, const char *db, unsigned int port, const char *unix_socket, unsigned long client_flag);
+                        if (mysql_real_connect(con, "localhost", "user", "1234",
+                                "esb_db", 0, NULL, 0) != NULL)
+                        {
+                            printf("[+]Storing parsed values to table esb_request.\n");
+                            char *status="available";
+                            char sql_statement[2048];
+                            sprintf(sql_statement,"INSERT INTO esb_request(sender_id , dest_id, message_type,reference_id ,message_id ,received_on ,data_location , status,status_details ,processing_attempts) VALUES('%s','%s','%s','%s','%s','%s','%s','%s','empty',0)",bmd->envelop.sender_id,bmd->envelop.destination_id,bmd->envelop.message_type,bmd->envelop.reference_id,bmd->envelop.message_id,bmd->envelop.creation_time,bmdfilepath,status);
+                            if (mysql_query(con,sql_statement)==0) {
+                                printf("[+]Stored Successfully in table esb_request.\n");
+                            }
+                            else{
+                                fprintf(stderr, "%s\n", mysql_error(con));
+                            }
+                        
+                            mysql_close(con);
 
-                
-                }else{
-                    fprintf(stderr, "%s\n", mysql_error(con));
-                    mysql_close(con);
-                }
-                
-                }
-                else{
-                    fprintf(stderr, "%s\n", mysql_error(con));
+                        
+                        }else{
+                            fprintf(stderr, "%s\n", mysql_error(con));
+                            mysql_close(con);
+                        }
+                    
+                    }
+                    else{
+                        fprintf(stderr, "%s\n", mysql_error(con));   
+                    }
                     
                 }
-                
             }
             else{
-                perror("[-]Empty bmd parameters.");
+                printf("[-]File not closed.\n");
             }
-            
         }
         else{
-            printf("[-]File not closed.");
-        }
-
-        
-        }
-        else{
-            perror("[-]Error reading from socket.");
+            perror("[-]Error reading from socket.\n");
         }
     }
     else{
-        perror("[-]Error in creating file.");
+        perror("[-]Error in creating bmd file.\n");
     }
     printf("[+]Closing Connection.\n");
     close(sockfd);
@@ -315,11 +195,9 @@ bool client_handler_thread(int sock_fd) {
         return false;
     }
     printf("[+]Client handler thread created successfully.\n");
-    // pthread_exit(NULL);
     return true;
 }
 void start_server_socket(){
-  // char *ip = "127.0.0.1";
     int port = 8000;
     int e;
 
@@ -331,7 +209,7 @@ void start_server_socket(){
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if(sockfd<0)
     {
-        perror("[-]Error in socket");
+        perror("[-]Error creating socket\n");
         exit(1);
     }
      printf("[+]Server socket created. \n");
@@ -343,7 +221,7 @@ void start_server_socket(){
      e = bind(sockfd,(struct sockaddr*)&server_addr, sizeof(server_addr));
      if(e<0)
      {
-         perror("[-]Error in Binding");
+         perror("[-]Error Binding socket.\n");
          exit(1);
      }
      printf("[+]Binding Successfull.\n");
@@ -355,7 +233,7 @@ void start_server_socket(){
      }
      else 
      {
-         perror("[-]Error in Binding");
+         perror("[-]Error in Listening.\n");
          exit(1);
      }
     //  addr_size = sizeof(new_addr);
@@ -365,11 +243,11 @@ void start_server_socket(){
     //         return;
     //     }
     int connection_number=1;
-         while (1) {
+        while (1) {
         struct sockaddr_in caddr; /* client address */
         int len = sizeof(caddr);  /* address length could change */
 
-        printf("[+]Waiting for incoming connection %d.\n",connection_number);
+        printf("\n[+]Waiting for incoming connection %d.\n\n",connection_number);
         connection_number++;
         int client_fd = accept(sockfd, (struct sockaddr *) &caddr, &len);  /* accept blocks */
 
@@ -386,7 +264,7 @@ void start_server_socket(){
         }
     }  
 }
-int send_email(char *receiver_email)
+int send_email(char *receiver_email,char *bmdfilepath)
 {
     CURLcode ret;
     CURL *hnd;
@@ -396,8 +274,10 @@ int send_email(char *receiver_email)
     recipients = NULL;
     recipients = curl_slist_append(recipients, receiver_email);
 
+    char *payload=get_payload(bmdfilepath);//extract the payload from stored bmd file
+
     fd=fopen("mail.txt","w");
-    fprintf(fd,"From: \"Sender Name\" <sender@gmail.com>\nTo: \"Recipient Name\" <%s>\nSubject: This is your subject\n\nThis is your mail. Hi mail.\n",receiver_email);
+    fprintf(fd,"From: \"Sender Name\" <motoeverest8849@gmail.com>\nTo: \"Recipient Name\" <%s>\nSubject: This is your subject\n\n%s\n",receiver_email,payload);
     fclose(fd);
     fd = fopen("mail.txt", "rb");
     if (!fd) {return 1;} 
@@ -407,14 +287,14 @@ int send_email(char *receiver_email)
     curl_easy_setopt(hnd, CURLOPT_URL, "smtps://smtp.gmail.com:465/mail.txt");
     curl_easy_setopt(hnd, CURLOPT_UPLOAD, 1L);
     curl_easy_setopt(hnd, CURLOPT_READDATA, fd); 
-    curl_easy_setopt(hnd, CURLOPT_USERPWD, "sender@gmail.com:passwd");
+    curl_easy_setopt(hnd, CURLOPT_USERPWD, "motoeverest8849@gmail.com:password");
     curl_easy_setopt(hnd, CURLOPT_USERAGENT, "curl/7.47.0");
     curl_easy_setopt(hnd, CURLOPT_MAXREDIRS, 50L);
     curl_easy_setopt(hnd, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(hnd, CURLOPT_SSL_VERIFYHOST, 0L);
     curl_easy_setopt(hnd, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
     curl_easy_setopt(hnd, CURLOPT_TCP_KEEPALIVE, 1L);
-    curl_easy_setopt(hnd, CURLOPT_MAIL_FROM, "sender@gmail.com");
+    curl_easy_setopt(hnd, CURLOPT_MAIL_FROM, "motoeverest8849@gmail.com");
     curl_easy_setopt(hnd, CURLOPT_MAIL_RCPT, recipients);
     curl_easy_setopt(hnd, CURLOPT_VERBOSE, 1L);
 
@@ -438,9 +318,10 @@ void *query_queue(){
                     if (mysql_real_connect(con, "localhost", "user", "1234",
                             "esb_db", 0, NULL, 0) != NULL)
                             {
-                                printf("[+]Quering Database for request.");
+                                printf("[+]Quering Database for request.\n");
                                 while(1){
-                                  if (mysql_query(con, "SELECT message_id,sender_id,dest_id FROM esb_request WHERE status='available'")==0)
+                                    //continuously queries the esb-request table for available request
+                                  if (mysql_query(con, "SELECT message_id,sender_id,dest_id,data_location FROM esb_request WHERE status='available'")==0)
                                     {
                                        MYSQL_RES *result = mysql_store_result(con);
                                        if (result != NULL)
@@ -448,6 +329,7 @@ void *query_queue(){
                                         char message_id[45];
                                         char sender_id[45];
                                         char dest_id[45];
+                                        char bmdfilepath[50];
                                         
                                         int num_fields = mysql_num_fields(result);
 
@@ -466,6 +348,8 @@ void *query_queue(){
                                             strcpy(message_id,row[0]);
                                             strcpy(sender_id,row[1]);
                                             strcpy(dest_id,row[2]);
+                                            strcpy(bmdfilepath,row[3]);
+                                            // printf("This is the filepath::%s\n",bmdfilepath);
                                             mysql_free_result(result);
                                             char sql_query[200];
                                             sprintf(sql_query,"SELECT route_id FROM routes WHERE sender='%s' AND destination='%s'",sender_id,dest_id);
@@ -477,22 +361,30 @@ void *query_queue(){
                                                     MYSQL_ROW r;
                                                     r=mysql_fetch_row(res);
                                                     route_id=atoi(r[0]);
-                                                    sprintf(sql_query,"select config_value from transport_config WHERE route_id=%d",route_id);
                                                     mysql_free_result(res);
+
+                                                    sprintf(sql_query,"select config_key,config_value from transport_config WHERE route_id=%d",route_id);
                                                     if(mysql_query(con,sql_query)==0){
                                                         MYSQL_RES *res = mysql_store_result(con);
-                                                        char receiver_email[45];
                                                         if(res!=NULL)
                                                         {
                                                             MYSQL_ROW r;
                                                             r=mysql_fetch_row(res);
-                                                            strcpy(receiver_email,r[0]);
                                                             mysql_free_result(res);
-                                                            if(send_email(receiver_email)==0){
-                                                                printf("[+]Email sent to %s\n",receiver_email);
-                                                            }else{
-                                                                printf("[-]Email not sent.\n");
+                                                            char config_key[10];
+                                                            strcpy(config_key,r[0]);
+                                                            if(strcmp(config_key,"email")==0) //if the transport is via email
+                                                            {
+                                                                char receiver_email[45];
+                                                                strcpy(receiver_email,r[1]);
+                                                                printf("[+]Sending email to %s.\n",receiver_email);
+                                                                if(send_email(receiver_email,bmdfilepath)==0){
+                                                                    printf("[+]Email sent to %s\n",receiver_email);
+                                                                }else{
+                                                                    printf("[-]Email not sent.\n");
+                                                                }
                                                             }
+                                                           
                                                         }
                                                     }else{
                                                         printf("[-]Error fetching config_value.\n");
@@ -500,16 +392,16 @@ void *query_queue(){
 
                                                 }
 
-                                                
                                             }else{
                                                 printf("[-]Error fetching route_id.\n");
                                             }
                                             sprintf(sql_query,"UPDATE esb_request SET status='done' WHERE message_id='%s'",message_id);
                                             if(mysql_query(con,sql_query)==0){
-                                                printf("[+]Status Updated.[+]Processing done.\n");
+                                                printf("[+]Status Updated to done.\n"); //status updated from available to done indicating work finished
                                             }else{
                                                 printf("Processing Failed.\n");
                                             }
+                                            //sleep 10 seconds
                                             sleep(10);
                                         }
                                     }
@@ -541,7 +433,6 @@ void start_query_queue(){
 
 int main ()
 {
-    // Q=createQueue(5);
     start_query_queue();
     start_server_socket();
 }

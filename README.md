@@ -10,14 +10,14 @@
 
 **compilation of esb.c(open a command line)**
 
-	gcc -pthread -lxml2 -o esb.o esb.c `xml2-config --cflags --libs` `mysql_config --cflags --libs`
-	output: creates an executable exb.o
+	gcc -pthread -lxml2 -o esb.o esb.c bmd.c `xml2-config --cflags --libs` `mysql_config --cflags --libs` -lcurl
+	output: creates an executable esb.o
 	execution: ./esb.o
 
 **sending a client request**
 
 	open another command line
-	curl -X POST -d @/xmlfilepath http://localhost:8080
+	curl -X POST -d @/full_xmlfilepath http://localhost:8000
 
 **Necessary installations:**
 

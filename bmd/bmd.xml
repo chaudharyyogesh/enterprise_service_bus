@@ -14,5 +14,5 @@
             <key2>Value2</key2>
         </UserProperties>
     </Envelop>
-    <Payload>001-01-1234</Payload>
+    <Payload>I am payload.</Payload>
 </BMD>

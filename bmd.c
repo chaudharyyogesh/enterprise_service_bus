@@ -1,13 +1,8 @@
-/**
- * This code is adapted from the sample available at:
- * http://xmlsoft.org/tutorial/apd.html.
- * 
- * Compile using the following command on linux/Mac:
- * gcc -lxml2 extract_xml_nodes_data.c -o xml_prog
- */
-
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+#include <string.h>
+
+#include "bmd.h"
 
 xmlDocPtr load_xml_doc(char *xml_file_path) {
     xmlDocPtr doc = xmlParseFile(xml_file_path);
@@ -66,44 +61,35 @@ xmlChar* get_element_text(char *node_xpath, xmlDocPtr doc) {
     return node_text;
 }
 
-/**
- * Following XML sample is used to test this program.
- * 
-<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type='text/xsl'?>
-<BMD>
-    <Envelop>
-        <MessageID>A9ECAEF2-107A-4452-9553-043B6D25386E</MessageID>
-        <MessageType>CreditReport</MessageType>
-        <Sender>756E2EAA-1D5B-4BC0-ACC4-4CEB669408DA</Sender>
-        <Destination>6393F82F-4687-433D-AA23-1966330381FE</Destination>
-        <CreationDateTime>2020-08-12T05:18:00+0000</CreationDateTime>
-        <Signature>63f5f61f7a79301f715433f8f3689390d1f5da4f855169023300491c00b8113c</Signature>
-        <ReferenceID>INV-PROFILE-889712</ReferenceID>
-        <UserProperties>
-            <key1>Value1</key1>
-            <key2>Value2</key2>
-        </UserProperties>
-    </Envelop>
-    <Payload>001-01-1234</Payload>
-</BMD>
+BMD* parse_bmd_file(char *bmdfilepath){
+    // printf("BMDFILEPATH:%s\n",bmdfilepath);
+    xmlDocPtr doc = load_xml_doc(bmdfilepath);
 
-Output expected is:
-    MessageID=A9ECAEF2-107A-4452-9553-043B6D25386E
-    Sender=756E2EAA-1D5B-4BC0-ACC4-4CEB669408DA
-    Destination=6393F82F-4687-433D-AA23-1966330381FE
-    MessageType=CreditReport
-    Payload=001-01-1234
-*/
-int main(int argc, char **argv) {
-    char *docname = "/home/yogesh/Downloads/c_programs/socket programming/File-Transfer-Using-TCP-Socket-in-C-Socket-Programming/received_bmd.xml";
-    xmlDocPtr doc = load_xml_doc(docname);
-    printf("MessageID=%s\n", get_element_text("//MessageID", doc));
-    printf("Sender=%s\n", get_element_text("//Sender", doc));
-    printf("Destination=%s\n", get_element_text("//Destination", doc));
-    printf("MessageType=%s\n", get_element_text("//MessageType", doc));
-    printf("Payload=%s\n", get_element_text("//Payload", doc));
+    BMD *parsed_data = malloc(sizeof(BMD));
+
+
+    parsed_data->envelop.sender_id = get_element_text("//Sender", doc);
+    parsed_data->envelop.destination_id = get_element_text("//Destination", doc);
+    parsed_data->envelop.message_type = get_element_text("//MessageType", doc);
+    parsed_data->envelop.reference_id = get_element_text("//ReferenceID", doc);
+    parsed_data->envelop.message_id = get_element_text("//MessageID", doc);
+    parsed_data->envelop.signature=get_element_text("//Signature",doc);
+    parsed_data->envelop.creation_time=get_element_text("//CreationDateTime",doc);
+    parsed_data->payload = get_element_text("//Payload", doc);
+
+    // printf("PAYLOAD::%s\n",parsed_data->payload);
+
     xmlFreeDoc(doc);
     xmlCleanupParser();
-    return 1;
+
+    return parsed_data;
+}
+
+char* get_payload(char *bmdfilepath){
+    xmlDocPtr doc = load_xml_doc(bmdfilepath);
+    char *payload=get_element_text("//Payload", doc);
+    printf("PAYLOAD:%s\n",payload);
+    xmlFreeDoc(doc);
+    xmlCleanupParser();
+    return payload;
 }

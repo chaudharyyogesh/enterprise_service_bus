@@ -2,7 +2,7 @@
 
 **Created esb.c**
 
-	creates a server socket thats listens to incoming client requests(used curl command)
+	creates a server socket thats listens(endlessly) to incoming client requests(used curl command)
 	creates a thread to process the client request
 	parses the bmd sent
 	validates the parsed bmd

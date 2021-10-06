@@ -9,6 +9,7 @@
 	stores the bmd in the esb_request table(mysql database) if bmd validation successful
 
 **STEP1: Necessary installations:**
+
 	sudo apt update
 	sudo apt install build-essential
 	sudo apt install libssl-dev

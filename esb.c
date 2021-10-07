@@ -23,7 +23,8 @@
 
 1. stores the received BMD request file in the local system.
 2. parses the file
-3. prints out the mandatory fields extracted from the BMD
+3. checks if the BMD file is valid (i.e. checks for the mandatory fields, for eg. sender, destination,signature, message_id etc)
+4. prints out the extracted fields from the BMD (given if the BMD request file is valid)
 4. inserts the relevant data in the esb_request table
 
 */
@@ -165,6 +166,14 @@ bool client_handler_thread(int sock_fd) {
     printf("[+]Client handler thread created successfully.\n");
     return true;
 }
+
+/* the start_server_socket function
+1. creates a server socket
+2. bind the socket
+3. starts listening for the client requests
+4. invokes the client_handler_thread function
+
+*/
 void start_server_socket(){
     int port = 8000;
     int e;

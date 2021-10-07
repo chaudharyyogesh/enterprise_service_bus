@@ -2,11 +2,13 @@
 
 **Created esb.c**
 
-	creates a server socket thats listens(endlessly) to incoming client requests(used curl command)
-	creates a thread to process the client request
-	parses the bmd sent
-	validates the parsed bmd
-	stores the bmd in the esb_request table(mysql database) if bmd validation successful
+	*creates a server socket thats listens(endlessly) to incoming client requests(used curl command)
+	*creates a thread to process the client request
+	*parses the bmd sent
+	*validates the parsed bmd
+	*stores the bmd in the esb_request table(mysql database) if bmd validation successful
+	*query the database queue for available requests
+	*process the request(transform and transport)
 
 **STEP1: Necessary installations:**
 

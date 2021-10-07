@@ -242,6 +242,14 @@ void start_server_socket(){
     }  
 }
 
+/* the query_queue function
+1. creates a database connection
+2. queries the database for any available requests continuously
+3. if request is available fetches details from transform_config table and then transforms the payload accordingly
+4. fetches details from transport_config table and then transports the payload accordingly
+5. marks status as 'done' if success or 'failed' if failure
+
+*/
 void *query_queue(){
     printf("[+]Quering queue started.\n");
     
@@ -288,6 +296,7 @@ void *query_queue(){
                                             mysql_free_result(result);
                                             char sql_query[200];
                                             sprintf(sql_query,"SELECT route_id FROM routes WHERE sender='%s' AND destination='%s'",sender_id,dest_id);
+                                            bool processing_complete=true;
                                             if(mysql_query(con,sql_query)==0){
                                                 MYSQL_RES *res = mysql_store_result(con);
                                                 int route_id;
@@ -309,7 +318,7 @@ void *query_queue(){
                                                             mysql_free_result(transform_result);
                                                             char config_key[10];
                                                             strcpy(config_key,r[0]);
-                                                            strcpy(filepath,transform(config_key,bmdfilepath));
+                                                            strcpy(filepath,transform(config_key,bmdfilepath));//call transform function where config_key is the transformation type
                                                             printf("File stored at location:%s\n",filepath);
 
                                                             sprintf(sql_query,"SELECT config_key,config_value FROM transport_config WHERE route_id=%d",route_id);
@@ -330,34 +339,37 @@ void *query_queue(){
                                                                         if(send_email(receiver_email,filepath)==0){
                                                                             printf("[+]Email sent to %s\n",receiver_email);
                                                                         }else{
+                                                                            processing_complete=false;
                                                                             printf("[-]Email not sent.\n");
                                                                         }
                                                                     }
                                                                     //work to be done:implement same as email for http and ftp
-                                                                
                                                                 }
                                                             }else{
+                                                                processing_complete=false;
                                                                 fprintf(stderr, "%s\n", mysql_error(con));
                                                             }
                                                         }
                                                     }else{
+                                                        processing_complete=false;
                                                         fprintf(stderr, "%s\n", mysql_error(con));
                                                     }
 
                                                 }
 
                                             }else{
+                                                processing_complete=false;
                                                 printf("[-]Error fetching route_id.\n");
                                             }
                                             sprintf(sql_query,"UPDATE esb_request SET status='done' WHERE message_id='%s'",message_id);
-                                            if(mysql_query(con,sql_query)==0){
-                                                printf("[+]Status Updated to done.\n"); //status updated from available to done indicating work finished
+                                            if(mysql_query(con,sql_query)==0 && processing_complete==true){
+                                                printf("[+]Status Updated to done.\n"); //status updated from available to done indicating processing finished
                                             }else{
                                                 printf("Processing Failed.\n");
                                                 sprintf(sql_query,"UPDATE esb_request SET status='failed' WHERE message_id='%s'",message_id);
-                                            if(mysql_query(con,sql_query)==0){
-                                                printf("[+]Status Updated to failed.\n"); //status updated from available to done indicating work finished
-                                            }
+                                                if(mysql_query(con,sql_query)==0){
+                                                    printf("[+]Status Updated to failed.\n"); //status updated from available to failed indicating processing failed
+                                                }
                                             }
                                             //sleep 10 seconds
                                             sleep(10);

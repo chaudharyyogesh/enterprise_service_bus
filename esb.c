@@ -19,6 +19,14 @@
 
 #define SIZE 2024
 
+/* the write_file function
+
+1. stores the received BMD request file in the local system.
+2. parses the file
+3. prints out the mandatory fields extracted from the BMD
+4. inserts the relevant data in the esb_request table
+
+*/
 
 void *write_file(void *new_sock)
 {
@@ -131,6 +139,13 @@ void *write_file(void *new_sock)
     close(sockfd);
     pthread_exit(NULL);
 }
+
+/* the client_handler_thread function
+
+1. creates a client handler thread the invokes the write_file function
+2. returns true if the thread was created succesfully, else returns false
+
+*/
 bool client_handler_thread(int sock_fd) {
     printf("[+]Creating a client handler thread.\n");
     pthread_t thr_id;

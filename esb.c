@@ -142,7 +142,7 @@ void *write_file(void *new_sock)
 
 /* the client_handler_thread function
 
-1. creates a client handler thread the invokes the write_file function
+1. creates a client handler thread that invokes the write_file function
 2. returns true if the thread was created succesfully, else returns false
 
 */

@@ -16,7 +16,7 @@
 	sudo apt install wget
 	sudo apt install curl
 	libxml2 for xml parsing: sudo apt-get install libxml2-dev
-	Mysql: https://dev.mysql.com/doc/refman/8.0/en/linux-installation.html
+	sudo apt install libcurl4-openssl-dev
 
 
 **STEP2: Compilation of esb.c(open a command line)**
@@ -29,4 +29,24 @@
 
 	open another command line
 	curl -X POST -d @/full_xmlfilepath http://localhost:8000
+
+**BMD File**
+
+	bmd1.xml- no transformation, sent via email
+
+**Tools Used**
+
+    Visual studio code
+    Git
+    C Programming Language
+
+**References**
+
+    Socket programming: https://www.linuxhowtos.org/C_C++/socket.htm
+    pthreads: https://hpc-tutorials.llnl.gov/posix/
+    Database connectivity (MySQL https://dev.mysql.com/doc/c-api/8.0/en/, SQLite https://www.sqlite.org/cintro.html)
+    Kore web framework: https://docs.kore.io/4.1.0/
+    XML parsing: http://www.xmlsoft.org/examples/
+
+
 

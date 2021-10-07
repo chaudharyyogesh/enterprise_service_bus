@@ -1,9 +1,10 @@
-// gcc test_esb.c bmd.c ./test/munit.c `xml2-config --cflags --libs` `mysql_config --cflags --libs` -lcurl -lxml2 -o test_esb.o
+// gcc test_esb.c  bmd.c ./transport/send_email.c ./test/munit.c `xml2-config --cflags --libs` `mysql_config --cflags --libs` -lcurl -lxml2 -o test_esb.o
 // ./test_esb.o
 
 #include <stdio.h>
 #include "./test/munit.h"
 #include "bmd.h"
+#include "./transport/send_email.h"
 
 static void * test_xml_values_setup(const MunitParameter params[], void *user_data)
 {
@@ -51,17 +52,39 @@ static MunitResult test_xml_values(const MunitParameter params[], void* fixture)
   return MUNIT_OK;
 }
 
+//For testing the validation of the BMD
+static MunitResult test_bmd_valid(const MunitParameter params[], void* fixture) {
+  //char *path = (char *)fixture;
+
+  BMD *test_bmd= parse_bmd_file("/home/yogesh/Downloads/nho2021/Goat/received_bmd.xml");
+
+  printf("%s\n" ,test_bmd->envelop.message_id);
+ 
+  //validation test
+  int valid =is_bmd_valid(test_bmd);
+  munit_assert_int(valid,==,1);
+
+  return MUNIT_OK;
+}
+
+//For testing the email service
+static MunitResult
+test_email_service(const MunitParameter params[], void * fixture) {
+    int status = send_email("chaudharyyogesh9818743347@gmail.com", "/home/yogesh/Downloads/nho2021/Goat/received_bmd.xml");
+    munit_assert_int(status, == , 0);
+    return MUNIT_OK;
+}
 
 static MunitTest esb_tests[] = {
   
   
   { (char*) "/test_xml_values", test_xml_values, test_xml_values_setup , test_xml_values_tear_down, MUNIT_TEST_OPTION_NONE, NULL},
    
-//    { (char*) "/test_bmd_valid", test_bmd_valid, NULL , NULL, MUNIT_TEST_OPTION_NONE, NULL},
+   { (char*) "/test_bmd_valid", test_bmd_valid, NULL , NULL, MUNIT_TEST_OPTION_NONE, NULL},
 
 //   { (char*) "/test_queue_request",test_queue_request, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 
-//   { (char*) "/test_email_service",test_email_service, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
+  { (char*) "/test_email_service",test_email_service, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 
 
 //  { (char*) "/test_ftp",test_ftp, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },

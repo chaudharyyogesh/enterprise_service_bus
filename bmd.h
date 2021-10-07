@@ -14,5 +14,6 @@ typedef struct {
     char* payload;
 } BMD;
 
+int  is_bmd_valid(BMD *bmd);
  BMD* parse_bmd_file(char *bmdfilepath);
  char* get_payload(char *bmdfilepath);

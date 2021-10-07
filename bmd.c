@@ -61,6 +61,57 @@ xmlChar* get_element_text(char *node_xpath, xmlDocPtr doc) {
     return node_text;
 }
 
+ int  is_bmd_valid(BMD *bmd) //bmd validation function
+{
+    
+    int valid = 1; // 1 => vaild, 0 => invalid
+  
+   
+      if(bmd->envelop.message_id==0)
+    {
+        printf("[-]MessageId is mandatory (missing in BMD file)\n");
+        valid = 0;
+    }
+     if(bmd->envelop.message_type==0)
+    {
+        printf("[-]MessageType is mandatory (missing in BMD file)\n");
+        valid = 0;
+
+    } 
+    if(bmd->envelop.sender_id==0)
+    {
+        printf("[-]Sender Id is mandatory (missing in BMD file)\n");
+        valid = 0;
+
+    } 
+    if(bmd->envelop.destination_id== 0)
+    {      
+        printf("[-]Destination Id is mandatory (missing in BMD file)\n");
+        valid = 0;
+
+    } 
+    if(bmd->envelop.creation_time== 0)
+    {
+        printf("[-]CreationDateTime is mandatory (missing in BMD file)\n");
+        valid = 0;
+
+    } 
+    if(bmd->envelop.signature== 0)
+    {
+        printf("[-]Signature is mandatory (missing in BMD file)\n");
+        valid = 0;
+
+    } 
+    if(bmd->envelop.reference_id== 0)
+    {
+        printf("[-]ReferenceID is mandatory (missing in BMD file)\n");
+        valid = 0;
+    }
+    printf("valid:%d\n",valid);
+    return valid;
+}
+
+
 BMD* parse_bmd_file(char *bmdfilepath){
     // printf("BMDFILEPATH:%s\n",bmdfilepath);
     xmlDocPtr doc = load_xml_doc(bmdfilepath);
@@ -88,7 +139,7 @@ BMD* parse_bmd_file(char *bmdfilepath){
 char* get_payload(char *bmdfilepath){
     xmlDocPtr doc = load_xml_doc(bmdfilepath);
     char *payload=get_element_text("//Payload", doc);
-    printf("PAYLOAD:%s\n",payload);
+    printf("PAYLOAD: %s\n",payload);
     xmlFreeDoc(doc);
     xmlCleanupParser();
     return payload;

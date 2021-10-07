@@ -1,5 +1,5 @@
-//compile: gcc -pthread -lxml2 -o esb.o esb.c bmd.c `xml2-config --cflags --libs` `mysql_config --cflags --libs` -lcurl
-// send client request: curl -X POST -d @/home/yogesh/Downloads/c_programs/received_bmd.xml http://localhost:8000
+//compile: gcc -pthread -lxml2 -o esb.o esb.c bmd.c ./transform/transform.c ./transport/send_email.c `xml2-config --cflags --libs` `mysql_config --cflags --libs` -lcurl
+// send client request: curl -X POST -d @/bmdfilepath http://localhost:8000
 
 
 #include <stdio.h>
@@ -14,58 +14,11 @@
 #include <mysql/mysql.h>
 #include <curl/curl.h>
 #include "bmd.h"
+#include "./transport/send_email.h"
+#include "./transform/transform.h"
 
 #define SIZE 2024
 
- int  is_bmd_valid(BMD *bmd) //bmd validation function
-{
-    
-    int valid = 1; // 1 => vaild, 0 => invalid
-  
-   
-      if(bmd->envelop.message_id==0)
-    {
-        printf("[-]MessageId is mandatory (missing in BMD file)\n");
-        valid = 0;
-    }
-     if(bmd->envelop.message_type==0)
-    {
-        printf("[-]MessageType is mandatory (missing in BMD file)\n");
-        valid = 0;
-
-    } 
-    if(bmd->envelop.sender_id==0)
-    {
-        printf("[-]Sender Id is mandatory (missing in BMD file)\n");
-        valid = 0;
-
-    } 
-    if(bmd->envelop.destination_id== 0)
-    {      
-        printf("[-]Destination Id is mandatory (missing in BMD file)\n");
-        valid = 0;
-
-    } 
-    if(bmd->envelop.creation_time== 0)
-    {
-        printf("[-]CreationDateTime is mandatory (missing in BMD file)\n");
-        valid = 0;
-
-    } 
-    if(bmd->envelop.signature== 0)
-    {
-        printf("[-]Signature is mandatory (missing in BMD file)\n");
-        valid = 0;
-
-    } 
-    if(bmd->envelop.reference_id== 0)
-    {
-        printf("[-]ReferenceID is mandatory (missing in BMD file)\n");
-        valid = 0;
-    }
-    printf("valid:%d\n",valid);
-    return valid;
-}
 
 void *write_file(void *new_sock)
 {
@@ -264,49 +217,7 @@ void start_server_socket(){
         }
     }  
 }
-int send_email(char *receiver_email,char *bmdfilepath)
-{
-    CURLcode ret;
-    CURL *hnd;
-    struct curl_slist *recipients;
-    FILE *fd;
-    
-    recipients = NULL;
-    recipients = curl_slist_append(recipients, receiver_email);
 
-    char *payload=get_payload(bmdfilepath);//extract the payload from stored bmd file
-
-    fd=fopen("mail.txt","w");
-    fprintf(fd,"From: \"Sender Name\" <motoeverest8849@gmail.com>\nTo: \"Recipient Name\" <%s>\nSubject: This is your subject\n\n%s\n",receiver_email,payload);
-    fclose(fd);
-    fd = fopen("mail.txt", "rb");
-    if (!fd) {return 1;} 
-
-    hnd = curl_easy_init();
-    curl_easy_setopt(hnd, CURLOPT_INFILESIZE_LARGE, (curl_off_t)179);
-    curl_easy_setopt(hnd, CURLOPT_URL, "smtps://smtp.gmail.com:465/mail.txt");
-    curl_easy_setopt(hnd, CURLOPT_UPLOAD, 1L);
-    curl_easy_setopt(hnd, CURLOPT_READDATA, fd); 
-    curl_easy_setopt(hnd, CURLOPT_USERPWD, "motoeverest8849@gmail.com:password");
-    curl_easy_setopt(hnd, CURLOPT_USERAGENT, "curl/7.47.0");
-    curl_easy_setopt(hnd, CURLOPT_MAXREDIRS, 50L);
-    curl_easy_setopt(hnd, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt(hnd, CURLOPT_SSL_VERIFYHOST, 0L);
-    curl_easy_setopt(hnd, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
-    curl_easy_setopt(hnd, CURLOPT_TCP_KEEPALIVE, 1L);
-    curl_easy_setopt(hnd, CURLOPT_MAIL_FROM, "motoeverest8849@gmail.com");
-    curl_easy_setopt(hnd, CURLOPT_MAIL_RCPT, recipients);
-    curl_easy_setopt(hnd, CURLOPT_VERBOSE, 1L);
-
-    ret = curl_easy_perform(hnd);
-
-    curl_easy_cleanup(hnd);
-    hnd = NULL;
-    curl_slist_free_all(recipients);
-    recipients = NULL;
-
-    return (int)ret;
-}
 void *query_queue(){
     printf("[+]Quering queue started.\n");
     
@@ -363,31 +274,50 @@ void *query_queue(){
                                                     route_id=atoi(r[0]);
                                                     mysql_free_result(res);
 
-                                                    sprintf(sql_query,"select config_key,config_value from transport_config WHERE route_id=%d",route_id);
+                                                    sprintf(sql_query,"SELECT config_key,config_value FROM transform_config WHERE route_id=%d",route_id);
+                                                    char filepath[300];
                                                     if(mysql_query(con,sql_query)==0){
-                                                        MYSQL_RES *res = mysql_store_result(con);
-                                                        if(res!=NULL)
+                                                        MYSQL_RES *transform_result = mysql_store_result(con);
+                                                        if(transform_result!=NULL)
                                                         {
                                                             MYSQL_ROW r;
-                                                            r=mysql_fetch_row(res);
-                                                            mysql_free_result(res);
+                                                            r=mysql_fetch_row(transform_result);
+                                                            mysql_free_result(transform_result);
                                                             char config_key[10];
                                                             strcpy(config_key,r[0]);
-                                                            if(strcmp(config_key,"email")==0) //if the transport is via email
-                                                            {
-                                                                char receiver_email[45];
-                                                                strcpy(receiver_email,r[1]);
-                                                                printf("[+]Sending email to %s.\n",receiver_email);
-                                                                if(send_email(receiver_email,bmdfilepath)==0){
-                                                                    printf("[+]Email sent to %s\n",receiver_email);
-                                                                }else{
-                                                                    printf("[-]Email not sent.\n");
+                                                            strcpy(filepath,transform(config_key,bmdfilepath));
+                                                            printf("File stored at location:%s\n",filepath);
+
+                                                            sprintf(sql_query,"SELECT config_key,config_value FROM transport_config WHERE route_id=%d",route_id);
+                                                            if(mysql_query(con,sql_query)==0){
+                                                                MYSQL_RES *transport_result = mysql_store_result(con);
+                                                                if(transport_result!=NULL)
+                                                                {
+                                                                    MYSQL_ROW r;
+                                                                    r=mysql_fetch_row(transport_result);
+                                                                    mysql_free_result(transport_result);
+                                                                    char config_key[10];
+                                                                    strcpy(config_key,r[0]);
+                                                                    if(strcmp(config_key,"email")==0) //if the transport is via email
+                                                                    {
+                                                                        char receiver_email[45];
+                                                                        strcpy(receiver_email,r[1]);
+                                                                        printf("[+]Sending email to %s.\n",receiver_email);
+                                                                        if(send_email(receiver_email,filepath)==0){
+                                                                            printf("[+]Email sent to %s\n",receiver_email);
+                                                                        }else{
+                                                                            printf("[-]Email not sent.\n");
+                                                                        }
+                                                                    }
+                                                                    //work to be done:implement same as email for http and ftp
+                                                                
                                                                 }
+                                                            }else{
+                                                                fprintf(stderr, "%s\n", mysql_error(con));
                                                             }
-                                                           
                                                         }
                                                     }else{
-                                                        printf("[-]Error fetching config_value.\n");
+                                                        fprintf(stderr, "%s\n", mysql_error(con));
                                                     }
 
                                                 }
@@ -400,6 +330,10 @@ void *query_queue(){
                                                 printf("[+]Status Updated to done.\n"); //status updated from available to done indicating work finished
                                             }else{
                                                 printf("Processing Failed.\n");
+                                                sprintf(sql_query,"UPDATE esb_request SET status='failed' WHERE message_id='%s'",message_id);
+                                            if(mysql_query(con,sql_query)==0){
+                                                printf("[+]Status Updated to failed.\n"); //status updated from available to done indicating work finished
+                                            }
                                             }
                                             //sleep 10 seconds
                                             sleep(10);

@@ -4,7 +4,8 @@
 
 
 /*
-Corrections made on fox team code by goat team
+Corrections made on Team fox's code by Team goat:
+
 1.In queue.c changed the key size to store the message id
 2. In worker thread, messageID in where clause was not taking a varchar value
 3. email not sending payload instead sending predefined body

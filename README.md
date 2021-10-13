@@ -10,7 +10,7 @@
 	*query the database queue for available requests
 	*process the request(transform and transport)
 
-**STEP1: Necessary installations:**
+**STEP-1: Necessary installations:**
 
 	sudo apt update
 	sudo apt install build-essential
@@ -21,13 +21,13 @@
 	sudo apt install libcurl4-openssl-dev
 
 
-**STEP2: Compilation of esb.c(open a command line)**
+**STEP-2: Compilation of esb.c(open a command line)**
 
 	gcc -pthread -lxml2 -o esb.o esb.c bmd.c `xml2-config --cflags --libs` `mysql_config --cflags --libs` -lcurl
 	output: creates an executable esb.o
 	execution: ./esb.o
 
-**STEP3: Sending a client request**
+**STEP-3: Sending a client request**
 
 	open another command line
 	curl -X POST -d @/full_xmlfilepath http://localhost:8000

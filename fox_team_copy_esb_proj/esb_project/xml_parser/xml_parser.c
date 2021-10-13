@@ -1,3 +1,5 @@
+#include<libxml/parser.h>
+#include<libxml/xpath.h>
 #include "xml_parser.h"
 
 xmlDocPtr load_xml_doc(char *xml_file_path) {
@@ -49,4 +51,23 @@ xmlChar* get_element_text(char *node_xpath, xmlDocPtr doc) {
         printf("ERROR: Node not found at xpath %s\n", node_xpath);
     }
     return node_text;
+}
+
+
+char* get_payload(char *bmdfilepath){
+    xmlDocPtr doc = load_xml_doc(bmdfilepath);
+    char *payload=get_element_text("//Payload", doc);
+    printf("PAYLOAD: %s\n",payload);
+    xmlFreeDoc(doc);
+    xmlCleanupParser();
+    return payload;
+}
+
+int is_bmd_valid(char *MessageID, char *SenderID,char *DestinationID,char *MessageType){
+    int valid=1;
+    if(MessageID==NULL || SenderID == NULL || DestinationID == NULL || MessageType == NULL)
+    {
+        valid=0;
+    }
+    return valid;
 }

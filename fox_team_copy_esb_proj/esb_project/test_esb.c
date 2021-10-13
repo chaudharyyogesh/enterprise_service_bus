@@ -1,10 +1,14 @@
-// gcc test_esb.c  bmd.c ./transport/send_email.c ./test/munit.c `xml2-config --cflags --libs` `mysql_config --cflags --libs` -lcurl -lxml2 -o test_esb.o
+// gcc test_esb.c  `xml2-config --cflags --libs` `mysql_config --cflags --libs` -lcurl -lxml2 -ljson-c -o test_esb.o
 // ./test_esb.o
 
 #include <stdio.h>
 #include "./test/munit.h"
-#include "bmd.h"
-#include "./transport/send_email.h"
+#include "./xml_parser/xml_parser.c"
+#include "./test/munit.c"
+#include "./transform/transform.c"
+#include "./http/http.c"
+#include "./ftp/ftp.c"
+#include "./email/email.c"
 
 static void * test_xml_values_setup(const MunitParameter params[], void *user_data)
 {
@@ -15,7 +19,7 @@ static void * test_xml_values_setup(const MunitParameter params[], void *user_da
      * has to be cleaned up in corresponding tear down function,
      * which in this case is test_tear_down.
      */
-    return strdup("/home/yogesh/Downloads/nho2021/Goat/received_bmd.xml");
+    return strdup("/home/yogesh/Downloads/nho2021/Goat/fox_team_copy_esb_proj/esb_project/test/test_bmd.xml");
 }
 
 static void test_xml_values_tear_down(void *fixture)
@@ -28,27 +32,32 @@ static void test_xml_values_tear_down(void *fixture)
 // For testing the bmd values
 static MunitResult test_xml_values(const MunitParameter params[], void* fixture) {
   char *path = (char *)fixture;
+  xmlDocPtr doc = load_xml_doc(path);
+  xmlChar* MessageID = get_element_text("//MessageID", doc);
+  xmlChar* SenderID = get_element_text("//Sender", doc);
+  xmlChar* DestinationID = get_element_text("//Destination", doc);
+  xmlChar* MessageType = get_element_text("//MessageType", doc);
+  xmlChar* CreationDateTime = get_element_text("//CreationDateTime", doc);
+  xmlChar* Signature = get_element_text("//Signature", doc);
+  xmlChar* ReferenceID = get_element_text("//ReferenceID", doc);
+  xmlChar* Key1 = get_element_text("//key1", doc);
+  xmlChar* Payload = get_element_text("//Payload", doc);
 
- 
+  char *extract_payload=get_payload(path);
 
-
-  BMD *test_bmd= parse_bmd_file(path);
-
-  printf("%s\n" ,test_bmd->envelop.message_id);
-
-  if(strcmp(path,"/home/yogesh/Downloads/nho2021/Goat/received_bmd.xml")==0) { 
+  if(strcmp(path,"/home/yogesh/Downloads/nho2021/Goat/fox_team_copy_esb_proj/esb_project/test/test_bmd.xml")==0) {
     //compare each and every data of xml with the expected data
-    munit_assert_string_equal(test_bmd->envelop.message_id,"SSSM45AF2-107A-4452-9553-043B6D4521SW");
-    munit_assert_string_equal(test_bmd->envelop.message_type,"CreditReport");
-    munit_assert_string_equal(test_bmd->envelop.sender_id,"AED2EAA-1D5B-4BC0-ACC4-4S45454LMK");
-    munit_assert_string_equal(test_bmd->envelop.destination_id,"5SA3F82F-4547-4331-DD23-13F3A4441FJ");
-    munit_assert_string_equal(test_bmd->envelop.creation_time,"2018-01-11T07:30:22+0000");
-    munit_assert_string_equal(test_bmd->envelop.reference_id,"INV-PROFILE-884999");
-    munit_assert_string_equal(test_bmd->envelop.signature,"41526Ssdf9301f715433f8f3689390d1f5da5");
-    munit_assert_string_equal(test_bmd->payload,"Hi there. Payload.");
+    munit_assert_string_equal(MessageID,"SSSM45AF2-107A-4452-9553-043B6D4521SW");
+    munit_assert_string_equal(MessageType,"CreditReport");
+    munit_assert_string_equal(SenderID,"AED2EAA-1D5B-4BC0-ACC4-4S45454LMK");
+    munit_assert_string_equal(DestinationID,"5SA3F82F-4547-4331-DD23-13F3A4441FJ");
+    munit_assert_string_equal(CreationDateTime,"2018-01-11T07:30:22+0000");
+    munit_assert_string_equal(ReferenceID,"INV-PROFILE-884999");
+    munit_assert_string_equal(Signature,"41526Ssdf9301f715433f8f3689390d1f5da5");
+    munit_assert_string_equal(Payload,"Hi there. Payload.");
 
+    munit_assert_string_equal(extract_payload,"Hi there. Payload.");
     }
-
   return MUNIT_OK;
 }
 
@@ -56,22 +65,66 @@ static MunitResult test_xml_values(const MunitParameter params[], void* fixture)
 static MunitResult test_bmd_valid(const MunitParameter params[], void* fixture) {
   //char *path = (char *)fixture;
 
-  BMD *test_bmd= parse_bmd_file("/home/yogesh/Downloads/nho2021/Goat/received_bmd.xml");
+  xmlDocPtr doc = load_xml_doc("/home/yogesh/Downloads/nho2021/Goat/fox_team_copy_esb_proj/esb_project/test/test_bmd.xml");
+  xmlChar* MessageID = get_element_text("//MessageID", doc);
+  xmlChar* SenderID = get_element_text("//Sender", doc);
+  xmlChar* DestinationID = get_element_text("//Destination", doc);
+  xmlChar* MessageType = get_element_text("//MessageType", doc);
 
-  printf("%s\n" ,test_bmd->envelop.message_id);
  
   //validation test
-  int valid =is_bmd_valid(test_bmd);
+  int valid =is_bmd_valid(MessageID,SenderID,DestinationID,MessageType);
   munit_assert_int(valid,==,1);
 
   return MUNIT_OK;
 }
 
+
 //For testing the email service
 static MunitResult
 test_email_service(const MunitParameter params[], void * fixture) {
-    int status = send_email("chaudharyyogesh9818743347@gmail.com", "/home/yogesh/Downloads/nho2021/Goat/received_bmd.xml");
+    int status = transport_through_email("motoeverest8849@gmail.com","chaudharyyogesh9818743347@gmail.com", "/home/yogesh/Downloads/nho2021/Goat/fox_team_copy_esb_proj/esb_project/test/test_bmd.xml");
     munit_assert_int(status, == , 0);
+    return MUNIT_OK;
+}
+
+//for xml to json function
+static MunitResult test_jsontransform(const MunitParameter params[], void* fixture) {
+  char * filp =transformToJson("/home/yogesh/Downloads/nho2021/Goat/fox_team_copy_esb_proj/esb_project/test/test_bmd.xml");
+  printf("\n\nfilp is : %s\n\n\n",filp);
+  munit_assert_string_equal(filp,"xml_to_json.json");
+  return MUNIT_OK;
+}
+
+//for xml to csv function
+static MunitResult test_CSVtransform(const MunitParameter params[], void* fixture) {
+  char * filp =transformToCSV("/home/yogesh/Downloads/nho2021/Goat/fox_team_copy_esb_proj/esb_project/test/test_bmd.xml");
+  printf("\n\nfilp is : %s\n\n\n",filp);
+  munit_assert_string_equal(filp,"xml_to_csv.csv");
+  return MUNIT_OK;
+}
+
+//for xml to html function
+static MunitResult test_HTMLtransform(const MunitParameter params[], void* fixture) {
+  char * filp =transform_to_html("/home/yogesh/Downloads/nho2021/Goat/fox_team_copy_esb_proj/esb_project/test/test_bmd.xml");
+  printf("\n\nfilp is : %s\n\n\n",filp);
+  munit_assert_string_equal(filp,"xml_to_html.html");
+  return MUNIT_OK;
+}
+
+//For testing the FTP service
+static MunitResult
+test_ftp(const MunitParameter params[], void * fixture) {
+    int status = send_ftp_file("127.0.0.1","xml_to_json.json");
+    munit_assert_int(status, == , 1);
+    return MUNIT_OK;
+}
+
+//For testing the HTTP service
+static MunitResult
+test_http(const MunitParameter params[], void * fixture) {
+    int status = http("https://jsonplaceholder.typicode.com/posts", "xml_to_csv.csv");
+    munit_assert_int(status, == , 1);
     return MUNIT_OK;
 }
 
@@ -82,18 +135,20 @@ static MunitTest esb_tests[] = {
    
    { (char*) "/test_bmd_valid", test_bmd_valid, NULL , NULL, MUNIT_TEST_OPTION_NONE, NULL},
 
-//   { (char*) "/test_queue_request",test_queue_request, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 
   { (char*) "/test_email_service",test_email_service, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 
 
-//  { (char*) "/test_ftp",test_ftp, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
+ { (char*) "/test_ftp",test_ftp, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 
-//  { (char*) "/test_http",test_http, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
+ { (char*) "/test_http",test_http, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
  
-//  { (char*) "/test_transform",test_transform, NULL,NULL,MUNIT_TEST_OPTION_NONE, NULL },
+ { (char*) "/test_jsontransform",test_jsontransform, NULL,NULL,MUNIT_TEST_OPTION_NONE, NULL },
  
-//  { (char*) "/test_CSVtransform",test_CSVtransform, NULL,NULL,MUNIT_TEST_OPTION_NONE, NULL },
+ { (char*) "/test_CSVtransform",test_CSVtransform, NULL,NULL,MUNIT_TEST_OPTION_NONE, NULL },
+
+ { (char*) "/test_HTMLtransform",test_HTMLtransform, NULL,NULL,MUNIT_TEST_OPTION_NONE, NULL },
+ 
  
  
   { NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL }

@@ -1,5 +1,6 @@
 // gcc -pthread -lxml2 -o esb_app esb_app.c `xml2-config --cflags --libs` `mysql_config --cflags --libs` -ljson-c -lcurl
-//curl -d @/home/rahul/Desktop/Programming/esb_proj/bmd_files/bmd_file1.xml http://localhost:8001
+//curl -X POST -d@/home/yogesh/Downloads/nho2021/Goat/bmd/bmd_email.xml http://localhost:8001
+
 
 
 /*
@@ -48,9 +49,9 @@ void *Print_database_queue(void *socket){
     
     //Defining file
     FILE *fp;
-    char str[100];
+    char str[200];
     i++;
-    sprintf(str, "/home/yogesh/Downloads/nho2021/Fox/esb_project/received_bmd_files/received%d.xml", i);
+    sprintf(str, "/home/yogesh/Downloads/nho2021/Goat/fox_team_copy_esb_proj/esb_project/received_bmd_files/received%d.xml", i);
     char buffer[SIZE];
 
     fp = fopen(str, "w");
@@ -113,7 +114,7 @@ void *Print_database_queue(void *socket){
     printf("key1:%s, ", Key1);
     printf("Payload:%s}\n", Payload );
     
-    if( SenderID == NULL || DestinationID == NULL || MessageType == NULL ){
+    if( is_bmd_valid(MessageID,SenderID,DestinationID,MessageType)==0 ){
       printf("Invalid input request\n");
     } else{
         //Storing message ID of xml file in queue
@@ -216,6 +217,8 @@ void *worker_thread(){
   		//Transform the payload to desired format
   		char transform_status[20] = "FAILURE" ;
         char transformed_file[30];
+
+              printf(">>>>Transforming.\n");
   		if( strcmp(transform_key, "json") == 0 ){
             strcpy(transformed_file, transformToJson( data_location));
   			if( strcmp(transformed_file,"xml_to_json.json")==0 ) strcpy( transform_status, "SUCCESS" );
@@ -243,8 +246,9 @@ void *worker_thread(){
   		//Transport the payload to desired destination
   		char transport_status[20] = "FAILURE";
   		if( strcmp(transform_status, "SUCCESS") == 0 ){ 
+              printf(">>>>Transporting.\n");
   			if( strcmp(transport_key, "email") == 0 ){
-  				if( transport_through_email( "motoeverest8849@gmail.com", transport_value ) == 0 ) strcpy( transport_status, "SUCCESS");
+  				if( transport_through_email( "motoeverest8849@gmail.com", transport_value,data_location ) == 0 ) strcpy( transport_status, "SUCCESS");
   			 }
             else if(strcmp(transport_key,"http")==0)
             {

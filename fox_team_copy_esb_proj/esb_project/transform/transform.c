@@ -148,7 +148,7 @@ char * transformToJson(char *bmdfilepath){
         json_file=parsedInput[1];
         free(xmlName);    
     }
-    printf("successfully transformed to json with data....%s....%s\n",payload,json_file);
+    printf(">>>Successfully transformed to json with data....%s....%s\n",payload,json_file);
     return json_file;   //returning json file name 
 }
 
@@ -160,7 +160,7 @@ char* transformToCSV(char *bmdfilepath){
     parsing(parsedInput,path,"."); 
     char *csv_file = "xml_to_csv.csv"; //string to store the output filename
     const char *payload;   
-    printf("pasred input1:%s :: %s :: %s\n",parsedInput[1],path,bmdfilepath);            
+    // printf("pasred input1:%s :: %s :: %s\n",parsedInput[1],path,bmdfilepath);            
     if(strcmp(parsedInput[1],"xml") == 0) //check if the input file is xml or not
     {  
         xmlName = malloc(strlen(path)+1);
@@ -195,7 +195,7 @@ char* transformToCSV(char *bmdfilepath){
       xmlCleanupParser();
       free(xmlName);
     }   
-    printf("successfully transformed to CSV %s\n",csv_file);
+    printf(">>>successfully transformed to CSV %s\n",csv_file);
     return csv_file;
 }
 

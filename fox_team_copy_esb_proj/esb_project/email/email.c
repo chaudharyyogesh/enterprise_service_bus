@@ -1,6 +1,7 @@
+#include <curl/curl.h>
 #include "email.h"
 
-int transport_through_email( char *sender, char *destination )
+int transport_through_email(char *sender, char *destination, char *path )
 {
        char password[45]="171030959818";//enter your email password
        char login_credentials[90];
@@ -8,7 +9,15 @@ int transport_through_email( char *sender, char *destination )
   	CURLcode ret;
     	CURL *hnd;
     	struct curl_slist *recipients;
+
     	FILE *fd;
+
+		// printf("\npath:%s\n",path);
+		char *payload=get_payload(path);//extract the payload from stored bmd file
+    // motoeverest8849@gmail.com is the senders email address
+    fd=fopen("mail.txt","w");
+    fprintf(fd,"From: \"Sender Name\" <%s>\nTo: \"Recipient Name\" <%s>\nSubject: This is your subject\n\n%s\n",sender,destination,payload);
+    fclose(fd);
     
     	recipients = NULL;
     	recipients = curl_slist_append(recipients, destination);

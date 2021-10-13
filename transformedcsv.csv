@@ -1,2 +1,2 @@
 Payload
-Hi there. Payload.
+/home/yogesh/Downloads/nho2021/Fox/esb_project/received_bmd_fileSELECT config_key,config_value FROM transform_config WHERE route_id=2

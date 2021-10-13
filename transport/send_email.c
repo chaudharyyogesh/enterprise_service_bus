@@ -26,7 +26,7 @@ int send_email(char *receiver_email,char *bmdfilepath)
     curl_easy_setopt(hnd, CURLOPT_URL, "smtps://smtp.gmail.com:465/mail.txt");
     curl_easy_setopt(hnd, CURLOPT_UPLOAD, 1L);
     curl_easy_setopt(hnd, CURLOPT_READDATA, fd); 
-    curl_easy_setopt(hnd, CURLOPT_USERPWD, "motoeverest8849@gmail.com:9842624000");//enter your email id and password
+    curl_easy_setopt(hnd, CURLOPT_USERPWD, "motoeverest8849@gmail.com:171030959818");//enter your email id and password
     curl_easy_setopt(hnd, CURLOPT_USERAGENT, "curl/7.47.0");
     curl_easy_setopt(hnd, CURLOPT_MAXREDIRS, 50L);
     curl_easy_setopt(hnd, CURLOPT_SSL_VERIFYPEER, 0L);

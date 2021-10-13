@@ -2,4 +2,4 @@ From: "Sender Name" <motoeverest8849@gmail.com>
 To: "Recipient Name" <chaudharyyogesh9818743347@gmail.com>
 Subject: This is your subject
 
-Hi there. Payload.
+/home/yogesh/Downloads/nho2021/Fox/esb_project/received_bmd_fileSELECT config_key,config_value FROM transform_config WHERE route_id=1

@@ -191,7 +191,7 @@ void *Print_database_queue(void *socket){
 void *worker_thread(){
     while(1){
     	sleep(10);
- 	printf("Worker thread is working independentely\n");
+ 	printf("[+]Worker thread is working independentely\n");
  		
  	while( q->front != NULL ){
  	    strcpy( q->front->status, "Processing" );
@@ -330,12 +330,12 @@ int main ()
      if(result<0){
          perror(">>Error in Binding");
          exit(1);
-     }printf(">>Binding Successfull.\n");
+     }printf("[+]Binding Successfull.\n");
 
      //Listening
      result = listen(server_socket, 5);
      if(result==0){
-         printf(">>Server listening at port 8001...\n"); 
+         printf("[+]Server listening at port 8001...\n"); 
      }else {
          perror(">>Error occur during listening");
          exit(1);
@@ -348,10 +348,10 @@ int main ()
        client_socket = accept(server_socket,NULL,NULL);
        pthread_t thread1,thread2;
        int rc = pthread_create( &thread1, NULL, Print_database_queue, (void *) (intptr_t) client_socket );
-       if (rc) printf(">>Failed to create thread1."); else printf(">>Thread1 created successfully.\n");
+       if (rc) printf("[-]Failed to create request handler thread."); else printf("[+]Request handler thread created successfully.\n");
        if(!flag){
        int rc1 = pthread_create( &thread2, NULL, worker_thread, NULL);
-       if (rc1) printf(">>Failed to create thread2."); else printf(">>Thread2 created successfully.\n");
+       if (rc1) printf("[-]Failed to create worker thread."); else printf("[+]Worker thread created successfully.\n");
        flag=true;
        }
        //pthread_exit(NULL); 

@@ -6,11 +6,12 @@
 /*
 Corrections made on Team fox's code by Team goat:
 
-1.In queue.c changed the key size to store the message id
+1.  Edited queue.c, changed the key size to store the message id
 2. In worker thread, messageID in where clause was not taking a varchar value
-3. email not sending payload instead sending predefined body
-4. testing not done by fox team
-5. no proper documentation provided
+3. email was not sending payload instead was sending predefined body
+4. unit testing 
+5. transportation implemented http,ftp
+6. proper documentation provided
 
 */
 #include<stdio.h>
@@ -202,11 +203,7 @@ void *worker_thread(){
     while(1){
         // sleeps for 10 secs
     	sleep(10);
-<<<<<<< HEAD
  	printf(">>> Worker thread is working independentely.\n");
-=======
- 	printf("[+]Worker thread is working independentely\n");
->>>>>>> ce74159349457ca55a2fdad70ca252ab0cda2642
  		
  	while( q->front != NULL ){
  	    strcpy( q->front->status, "Processing" );
@@ -364,20 +361,12 @@ int main ()
      if(result<0){
          perror(">> Error in Binding");
          exit(1);
-<<<<<<< HEAD
      }printf(">>> Binding Successfull.\n");
-=======
-     }printf("[+]Binding Successfull.\n");
->>>>>>> ce74159349457ca55a2fdad70ca252ab0cda2642
 
      //Listening
      result = listen(server_socket, 5);
      if(result==0){
-<<<<<<< HEAD
          printf(">>> Server listening at port 8001.\n"); 
-=======
-         printf("[+]Server listening at port 8001...\n"); 
->>>>>>> ce74159349457ca55a2fdad70ca252ab0cda2642
      }else {
          perror(">> Error occur during listening.\n");
          exit(1);
@@ -389,19 +378,11 @@ int main ()
        //Accepting client request
        client_socket = accept(server_socket,NULL,NULL);
        pthread_t thread1,thread2;
-<<<<<<< HEAD
        int rc = pthread_create( &thread1, NULL, request_handler, (void *) (intptr_t) client_socket );
        if (rc) printf(">> Failed to create thread1."); else printf(">>> Request handler thread created successfully.\n");
        if(!flag){
        int rc1 = pthread_create( &thread2, NULL, worker_thread, NULL);
        if (rc1) printf(">> Failed to create thread2."); else printf(">>> Worker thread created successfully.\n");
-=======
-       int rc = pthread_create( &thread1, NULL, Print_database_queue, (void *) (intptr_t) client_socket );
-       if (rc) printf("[-]Failed to create request handler thread."); else printf("[+]Request handler thread created successfully.\n");
-       if(!flag){
-       int rc1 = pthread_create( &thread2, NULL, worker_thread, NULL);
-       if (rc1) printf("[-]Failed to create worker thread."); else printf("[+]Worker thread created successfully.\n");
->>>>>>> ce74159349457ca55a2fdad70ca252ab0cda2642
        flag=true;
        }
        //pthread_exit(NULL); 

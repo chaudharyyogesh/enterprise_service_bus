@@ -47,6 +47,12 @@ int transport_through_email(char *sender, char *destination, char *path )
     	hnd = NULL;
     	curl_slist_free_all(recipients);
         recipients = NULL;
+
+		if((int)ret==0)
+		{
+			 printf("Email sent successfully to %s\n",destination);
+		}
+
     	return (int)ret ;
 }
 

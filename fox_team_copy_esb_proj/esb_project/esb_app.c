@@ -44,7 +44,7 @@ void finish_with_error(MYSQL *con){
   exit(1);
 }
 
-/* the Print_database_queue function
+/* the request_handler function
 
 1. creates a file to store the contents of the received BMD request file.
 
@@ -60,27 +60,28 @@ void finish_with_error(MYSQL *con){
 
 */
 
-void *Print_database_queue(void *socket){
+void *request_handler(void *socket){
     int sockfd; 
     sockfd = (intptr_t)socket;
     int n;
     
-    //Defining file
+    //Creating local file to store the received bmd file from client
     FILE *fp;
     char str[200];
     i++;
-    sprintf(str, "/home/yogesh/Downloads/nho2021/Goat/fox_team_copy_esb_proj/esb_project/received_bmd_files/received%d.xml", i);
+    sprintf(str, "/home/yogesh/Downloads/nho2021/Goat/fox_team_copy_esb_proj/esb_project/received_bmd_files/received%d.xml", i); //location to store the bmd file
     char buffer[SIZE];
 
     fp = fopen(str, "w");
-    if(fp==NULL){ perror(">>Error in creating file."); exit(1); }
+    if(fp==NULL){ perror(">> Error in creating file."); exit(1); }
     bzero(buffer, SIZE);
   
-    printf("[+]Reading and Creating File.\n");
-    n = read(sockfd, buffer, SIZE);
+    printf(">>> Reading and Creating File.\n");
+    n = read(sockfd, buffer, SIZE);//read the data sent from client and store it in the buffer
     if(n<=0){
         perror("[-]error in reading");
     }
+    // seperating the bmd xml portion from buffer 
     int start=0,end=strlen(buffer);
     for(int i=0;buffer[i]!='\0';i++){
         if(buffer[i]=='<'){
@@ -96,20 +97,21 @@ void *Print_database_queue(void *socket){
     }
     xmlcontent[c] = '\0';
         
-    fprintf(fp, "%s", xmlcontent);
-    printf(">>File Created Successfully.\n");
+    fprintf(fp, "%s", xmlcontent);//writing the bmd xml in the file
+    printf(">>> File Created Successfully.\n");
     bzero(buffer, SIZE);
     if(fclose(fp)!=0){
    	printf("[-]File not closed.");
         exit(-1);
     }
 
-    printf("[+] Parsing the File %s\n",str);
+    // parsing the received bmd file
+    printf(">>> Parsing the File %s\n\n",str);
     //char docname[] = "/home/rahul/Desktop/Programming/esb_proj/";
     //strcat(docname,filename);
-    printf("%s\n",str);
     
     //putting various elements of xml document in variables
+    printf("**PARSED BMD VALUES**\n");
     xmlDocPtr doc = load_xml_doc(str);
     xmlChar* MessageID = get_element_text("//MessageID", doc);
     xmlChar* SenderID = get_element_text("//Sender", doc);
@@ -122,44 +124,49 @@ void *Print_database_queue(void *socket){
     xmlChar* Payload = get_element_text("//Payload", doc);
     
     //Printing xml content on screen
-    printf("{MessageID:%s, ", MessageID);
-    printf("SenderID:%s, ", SenderID);
-    printf("DestinationID:%s ,", DestinationID);
-    printf("MessageType:%s ,", MessageType);
-    printf("CreationDateTime:%s ,", CreationDateTime);
-    printf("Signature:%s ,", Signature);
-    printf("ReferenceID:%s ,", ReferenceID);
-    printf("key1:%s, ", Key1);
-    printf("Payload:%s}\n", Payload );
+    printf("MessageID: %s\n", MessageID);
+    printf("SenderID: %s\n", SenderID);
+    printf("DestinationID: %s \n", DestinationID);
+    printf("MessageType: %s \n", MessageType);
+    printf("CreationDateTime: %s \n", CreationDateTime);
+    printf("Signature: %s \n", Signature);
+    printf("ReferenceID: %s \n", ReferenceID);
+    printf("key1: %s\n", Key1);
+    printf("Payload: %s\n", Payload );
     
-    if( is_bmd_valid(MessageID,SenderID,DestinationID,MessageType)==0 ){
-      printf("Invalid input request\n");
-    } else{
+    if( is_bmd_valid(MessageID,SenderID,DestinationID,MessageType)==0 )//checks if the parsed bmd is valid or not
+    {
+      printf(">> Invalid bmd input request.\n");
+    } 
+    else
+    {
         //Storing message ID of xml file in queue
         char message_id[45];
     	strcpy( message_id,MessageID );
     	enQueue(q,message_id);
-    	printf(">>MessageID is %s ",q->front->key);
-    	printf("inserted into queue.\n");
-    	printf("status of request %s\n", q->rear->status );
-     	printf("number_of_attempts %d\n", q->rear->number_of_attempts );
+    	printf(">>> MessageID %s ",q->front->key);
+    	printf("is inserted into queue.\n");
+    	printf(">>> Status of request: %s\n", q->rear->status );
+     	printf(">>> Number_of_attempts: %d\n", q->rear->number_of_attempts );
+
      	//Inializing mysql server
      	MYSQL *con = mysql_init(NULL);
     	if (con == NULL){
       		fprintf(stderr, "%s\n", mysql_error(con));
       		exit(1);
     	}
+        printf(">>> Database connection created.\n");
     
     	//connecting to mysql server
     	if (mysql_real_connect(con, "localhost", "user", "1234","esb_db", 0, NULL, 0) == NULL){
       		finish_with_error(con);
     	}
-    	printf("[+]Storing xml file content in table esb_request.\n");
+    	printf(">>> Storing xml file content in table esb_request.\n");
 
     	char status[]="available";
     	char sql_statement[2048];
     
-    	//Inserting xml file values into SQL database
+    	//Inserting xml file values into SQL database into esb_request table
     	sprintf(sql_statement,"INSERT INTO esb_request(sender_id , dest_id, message_type,reference_id ,message_id ,received_on ,data_location , status,status_details) VALUES('%s','%s','%s','%s','%s','%s','%s','%s','empty')",SenderID,DestinationID,MessageType,ReferenceID,MessageID,CreationDateTime,str,status);
     	if (mysql_query(con,sql_statement)) {
       		finish_with_error(con);
@@ -167,10 +174,12 @@ void *Print_database_queue(void *socket){
     	xmlFreeDoc(doc);
     	xmlCleanupParser();
     	mysql_close(con);
-    	printf(">>Stored Successfully.\n");
+    	printf(">>> Stored Successfully into database.\n");
     
     }
+    // Connection closed
     close(sockfd);
+    printf(">>> Client connection closed successfully.\n");
 }
 
 /* the worker_thread function
@@ -190,12 +199,13 @@ void *Print_database_queue(void *socket){
 */
 void *worker_thread(){
     while(1){
+        // sleeps for 10 secs
     	sleep(10);
- 	printf("Worker thread is working independentely\n");
+ 	printf(">>> Worker thread is working independentely.\n");
  		
  	while( q->front != NULL ){
  	    strcpy( q->front->status, "Processing" );
-            printf("%s\n",q->front->status);
+            printf(">>> Status: %s\n",q->front->status);
 	    char sender_info[45], destination_info[45], transport_key[45], transform_key[45], data_location[145],transport_value[45];
 		
 		//Inializing mysql server
@@ -211,11 +221,11 @@ void *worker_thread(){
       		}
       		
       		//Query to retrieve sender_id, destination_id from esb_request table
-              printf("\n%s\n\n",q->front->key);
+              printf("\nMessageID: %s\n\n",q->front->key);
       		char sql_query1[250] = "select sender_id, dest_id, data_location from esb_request where message_id='";
       		strcat( sql_query1, q->front->key );
       		strcat( sql_query1, "';" );
-              printf("\n%s\n\n",sql_query1);
+            //   printf("\n%s\n\n",sql_query1);
       		if( mysql_query( con, sql_query1 )){ finish_with_error( con ); }
       		MYSQL_RES *result = mysql_store_result(con);
   		if( result == NULL ){ finish_with_error(con); }
@@ -242,44 +252,42 @@ void *worker_thread(){
              strcpy( transport_value, row[1] );
  			strcpy( transform_key, row[2] );
   		} 
-  		printf( "senderInfo:%s\ndestinationInfo:%s\ntransportKey:%s\ntransformKey:%s\ntransport_value:%s\n", sender_info, destination_info, transport_key, transform_key, transport_value );
+  		printf( "SenderID:%s\nDestinationID:%s\nTransportKey:%s\nTransformKey:%s\nTransport_value:%s\n", sender_info, destination_info, transport_key, transform_key, transport_value );
   		mysql_free_result(result);
-  		mysql_close(con);
+  		
   		
   		//Transform the payload to desired format
   		char transform_status[20] = "FAILURE" ;
-        char transformed_file[30];
+        char transformed_file[30];//the file that stores the transformed format i.e. csv,json,html
 
-              printf(">>>>Transforming.\n");
+              printf("\n>>>Transforming.\n");
   		if( strcmp(transform_key, "json") == 0 ){
             strcpy(transformed_file, transformToJson( data_location));
   			if( strcmp(transformed_file,"xml_to_json.json")==0 ) strcpy( transform_status, "SUCCESS" );
   		} 
           else if( strcmp(transform_key, "csv") == 0 ){
-            //   printf("\ntransformed::%s\n",transformToCSV( data_location));
             strcpy(transformed_file, transformToCSV( data_location));
-            // printf("\ntransformedfile%s\n",transformed_file);
   			if(strcmp(transformed_file,"xml_to_csv.csv")==0 ) strcpy( transform_status, "SUCCESS" );
-            //   printf("status::%s\n",transform_status);
 
   		} 
-          else if( strcmp(transform_key, "xml") == 0 ){
-  			printf( "Transformation of desired file is not needed.\n" );strcpy( transform_status, "SUCCESS" );
-        }
         else if( strcmp(transform_key, "html") == 0 ){
   			strcpy(transformed_file, transform_to_html(data_location)); 
             if(strcmp(transformed_file,"xml_to_html.html")==0)
             strcpy( transform_status, "SUCCESS" );
         }
+        else if( strcmp(transform_key, "xml") == 0 ){
+  			printf( ">>> Transformation of desired file is not needed.\n" );strcpy( transform_status, "SUCCESS" );
+        }
         else{
-  			printf( "Transformation of desired file is not supported.\n" );
+  			printf( ">> Transformation of desired file is not supported.\n" );
   		}
   		
   		//Transport the payload to desired destination
   		char transport_status[20] = "FAILURE";
   		if( strcmp(transform_status, "SUCCESS") == 0 ){ 
-              printf(">>>>Transporting.\n");
+              printf("\n>>> Transporting.\n");
   			if( strcmp(transport_key, "email") == 0 ){
+                  printf("Sending email to %s\n",transport_value);
   				if( transport_through_email( "motoeverest8849@gmail.com", transport_value,data_location ) == 0 ) strcpy( transport_status, "SUCCESS");
   			 }
             else if(strcmp(transport_key,"http")==0)
@@ -296,13 +304,34 @@ void *worker_thread(){
   		}
   		
   		if( strcmp(transform_status, "SUCCESS") == 0 && strcmp(transport_status, "SUCCESS") == 0 ){
-  			printf("SUCCESS\n");
+            char sql_query3[1000];
+            sprintf(sql_query3,"UPDATE esb_request SET status='done' WHERE message_id='%s'",q->front->key);
+            if(mysql_query(con,sql_query3)==0){
+                printf(">>> SUCCESS\n");
+                printf(">>> Status Updated to done.\n"); //status updated from available to done indicating processing finished
+            }else
+            {
+                printf("Processing Failed.\n");
+                sprintf(sql_query3,"UPDATE esb_request SET status='failed' WHERE message_id='%s'",q->front->key);
+                if(mysql_query(con,sql_query3)==0){
+                    printf(">>> Status Updated to failed.\n"); //status updated from available to failed indicating processing failed
+                }
+            }
+  			
   		}
+        mysql_close(con);
   		deQueue(q);
 	    }
 	printf("\n");
 	}
 }
+
+/*  main function
+ 1. entry point of the esb
+ 2. creates a server socket(port no 8001)
+ 4. listens for client request continuously
+ 3. starts the request handler and worker thread 
+*/
 
 int main ()
 {
@@ -317,7 +346,7 @@ int main ()
         perror(">>Error in socket");
         exit(1);
     }
-     printf(">>Server socket created. \n");
+     printf(">>> Server socket created. \n");
      
      //Define the address
      struct sockaddr_in server_addr;
@@ -328,16 +357,16 @@ int main ()
      //Bind the server to a specified address and port
      result = bind( server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr) );
      if(result<0){
-         perror(">>Error in Binding");
+         perror(">> Error in Binding");
          exit(1);
-     }printf(">>Binding Successfull.\n");
+     }printf(">>> Binding Successfull.\n");
 
      //Listening
      result = listen(server_socket, 5);
      if(result==0){
-         printf(">>Server listening at port 8001...\n"); 
+         printf(">>> Server listening at port 8001.\n"); 
      }else {
-         perror(">>Error occur during listening");
+         perror(">> Error occur during listening.\n");
          exit(1);
      }
      
@@ -347,11 +376,11 @@ int main ()
        //Accepting client request
        client_socket = accept(server_socket,NULL,NULL);
        pthread_t thread1,thread2;
-       int rc = pthread_create( &thread1, NULL, Print_database_queue, (void *) (intptr_t) client_socket );
-       if (rc) printf(">>Failed to create thread1."); else printf(">>Thread1 created successfully.\n");
+       int rc = pthread_create( &thread1, NULL, request_handler, (void *) (intptr_t) client_socket );
+       if (rc) printf(">> Failed to create thread1."); else printf(">>> Request handler thread created successfully.\n");
        if(!flag){
        int rc1 = pthread_create( &thread2, NULL, worker_thread, NULL);
-       if (rc1) printf(">>Failed to create thread2."); else printf(">>Thread2 created successfully.\n");
+       if (rc1) printf(">> Failed to create thread2."); else printf(">>> Worker thread created successfully.\n");
        flag=true;
        }
        //pthread_exit(NULL); 

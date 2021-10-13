@@ -67,6 +67,7 @@ int is_bmd_valid(char *MessageID, char *SenderID,char *DestinationID,char *Messa
     int valid=1;
     if(MessageID==NULL || SenderID == NULL || DestinationID == NULL || MessageType == NULL)
     {
+        printf(">> BMD is Invalid.\n");
         valid=0;
     }
     return valid;

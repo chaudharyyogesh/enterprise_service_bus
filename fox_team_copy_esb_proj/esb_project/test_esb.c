@@ -72,7 +72,7 @@ static MunitResult test_bmd_valid(const MunitParameter params[], void* fixture) 
   xmlChar* MessageType = get_element_text("//MessageType", doc);
 
  
-  //validation test
+  //bmd validation test
   int valid =is_bmd_valid(MessageID,SenderID,DestinationID,MessageType);
   munit_assert_int(valid,==,1);
 

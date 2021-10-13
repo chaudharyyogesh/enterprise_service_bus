@@ -57,7 +57,8 @@ int http(char *http_url,char *text)
     
     curl_global_init(CURL_GLOBAL_ALL); 
     curl = curl_easy_init();
-    if (curl) {        
+    if (curl) {  
+        printf("Response Received.\n");
 
         curl_easy_setopt(curl, CURLOPT_URL, http_url);    //server's url
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, string);  //post the string
@@ -71,7 +72,7 @@ int http(char *http_url,char *text)
             curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
             if (response_code >= 200 && response_code <= 299 && response_code != CURLE_ABORTED_BY_CALLBACK)
             {
-                   printf("Request sent successfully, http response code is %ld\n",response_code);
+                   printf("Request sent successfully, http response code is %ld.\n",response_code);
                    status=1;
             }
         }
@@ -81,7 +82,7 @@ int http(char *http_url,char *text)
             fprintf(stderr, "curl_easy_perform() failed: %s\n",curl_easy_strerror(res));
         }
         else{
-            printf("we got %d bytes to our callback\n",(int)chunk.size);
+            printf("we got %d bytes to our callback.\n",(int)chunk.size);
         }
         
         free(chunk.memory);     //free the pointer 

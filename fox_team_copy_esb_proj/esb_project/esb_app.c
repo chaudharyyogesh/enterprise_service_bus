@@ -6,7 +6,7 @@
 /*
 Corrections made on fox team code by goat team
 1.In queue.c changed the key size to store the message id
-2. In worker thread messageid in where clause was not taking a varchar value
+2. In worker thread, messageID in where clause was not taking a varchar value
 3. email not sending payload instead sending predefined body
 4. testing not done by fox team
 5. no proper documentation provided
@@ -34,13 +34,31 @@ Corrections made on fox team code by goat team
 #define SIZE 16384
 int i=0;
 
-
+/* the finish_with_error function prints a desired
+    error message 
+*/
 
 void finish_with_error(MYSQL *con){
   fprintf(stderr, "%s\n", mysql_error(con));
   mysql_close(con);
   exit(1);
 }
+
+/* the Print_database_queue function
+
+1. creates a file to store the contents of the received BMD request file.
+
+2. fetches the file from the local system, parses the file and stores the mandatory
+   credentials of the BMD request file.
+    
+3. performs an authentication check on the received BMD file.
+
+4. inserts the relevant attributes into the esb_request table, given if the 
+    request is valid.
+    
+5. appends the messageID in a queue
+
+*/
 
 void *Print_database_queue(void *socket){
     int sockfd; 
@@ -58,10 +76,10 @@ void *Print_database_queue(void *socket){
     if(fp==NULL){ perror(">>Error in creating file."); exit(1); }
     bzero(buffer, SIZE);
   
-    printf(">>Reading and Creating File.\n");
+    printf("[+]Reading and Creating File.\n");
     n = read(sockfd, buffer, SIZE);
     if(n<=0){
-        perror("error reading");
+        perror("[-]error in reading");
     }
     int start=0,end=strlen(buffer);
     for(int i=0;buffer[i]!='\0';i++){
@@ -82,11 +100,11 @@ void *Print_database_queue(void *socket){
     printf(">>File Created Successfully.\n");
     bzero(buffer, SIZE);
     if(fclose(fp)!=0){
-   	printf(">>File not closed.");
+   	printf("[-]File not closed.");
         exit(-1);
     }
 
-    printf(">>Parsing File %s\n",str);
+    printf("[+] Parsing the File %s\n",str);
     //char docname[] = "/home/rahul/Desktop/Programming/esb_proj/";
     //strcat(docname,filename);
     printf("%s\n",str);
@@ -136,7 +154,7 @@ void *Print_database_queue(void *socket){
     	if (mysql_real_connect(con, "localhost", "user", "1234","esb_db", 0, NULL, 0) == NULL){
       		finish_with_error(con);
     	}
-    	printf(">>Storing xml file content in table esb_request.\n");
+    	printf("[+]Storing xml file content in table esb_request.\n");
 
     	char status[]="available";
     	char sql_statement[2048];
@@ -155,7 +173,21 @@ void *Print_database_queue(void *socket){
     close(sockfd);
 }
 
+/* the worker_thread function
 
+1. Checks for an active(pending) BMD request by searching the messageID
+    in the queue.
+
+2. in the case of a valid pending request,pulls the relevant contents 
+    from the esb_request table
+
+3. retrieves the tranform and tranport key from the transform_config and
+    tranport_config table respectively.
+
+4. applies the necessary transformation and send it to the desired destination
+5. sleeps for 10 secs, given if there is no pending request in the queue.
+
+*/
 void *worker_thread(){
     while(1){
     	sleep(10);

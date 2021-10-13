@@ -33,13 +33,31 @@ Corrections made on fox team code by goat team
 #define SIZE 16384
 int i=0;
 
-
+/* the finish_with_error function generates a desired
+    error message 
+*/
 
 void finish_with_error(MYSQL *con){
   fprintf(stderr, "%s\n", mysql_error(con));
   mysql_close(con);
   exit(1);
 }
+
+/* the Print_database_queue function
+
+1. creates a file to store the contents of the received BMD request file.
+
+2. fetches the file from the local system, parses the file and stores the
+    necessary attributes and data of the same.
+    
+3. performs an authentication check on the received BMD file.
+
+4. inserts the relevant attributes in the esb_request table, given if the 
+    request is valid.
+    
+6. appends the messageID in a queue
+
+*/
 
 void *Print_database_queue(void *socket){
     int sockfd; 
@@ -154,7 +172,21 @@ void *Print_database_queue(void *socket){
     close(sockfd);
 }
 
+/* the worker_thread function
 
+1. Checks for an active(pending) BMD request by searching the messageID
+    in the queue.
+
+2. in the case of a valid pending request,pulls the relevant contents 
+    from the esb_request table
+
+3. retrieves the tranform and tranport key from the transform_config and
+    tranport_config table respectively.
+
+4. applies the necessary transformation and send it to the desired destination
+5. sleeps for 10 secs, given if there is no pending request in the queue.
+
+*/
 void *worker_thread(){
     while(1){
     	sleep(10);

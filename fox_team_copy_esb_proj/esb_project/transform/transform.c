@@ -133,6 +133,11 @@ void parsing(char **parsedInput,char *string, char *parseType){//can be changed,
 
 //takes the file path as input and performs transformation and writes the json object content int a output file
 char * transformToJson(char *bmdfilepath){
+     //checking for null conditions
+     if(file_path==NULL)
+    {
+     return 0;
+     }
     char **parsedInput = malloc(100);
     char * path=bmdfilepath;
     parsing(parsedInput,path,"."); 
@@ -155,6 +160,10 @@ char * transformToJson(char *bmdfilepath){
 
 //transformToCSV takes the bmdfile path as the parameter and transforms it to csv format and saves it as .csv file
 char* transformToCSV(char *bmdfilepath){
+     if(file_path==NULL)
+    {
+     return 0;
+     }
     char **parsedInput = malloc(100);
     char * path=bmdfilepath;
     parsing(parsedInput,path,"."); 

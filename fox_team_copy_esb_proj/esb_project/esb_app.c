@@ -55,7 +55,7 @@ void finish_with_error(MYSQL *con){
 4. inserts the relevant attributes into the esb_request table, given if the 
     request is valid.
     
-6. appends the messageID in a queue
+5. appends the messageID in a queue
 
 */
 
